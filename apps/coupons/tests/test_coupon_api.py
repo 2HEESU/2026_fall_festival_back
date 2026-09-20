@@ -56,7 +56,9 @@ def test_coupon_issue(api_client, users):
     assert coupon.daily_sequence == 1
     assert coupon.issued_date == timezone.localdate()
 
-    counter = DailyCouponCounter.objects.get(date=timezone.localdate())
+    counter = DailyCouponCounter.objects.get(
+        date=timezone.localdate()
+    )
 
     assert counter.count == 1
 
@@ -119,7 +121,9 @@ def test_daily_sequence_increases(api_client, users):
     assert response1.json()["daily_sequence"] == 1
     assert response2.json()["daily_sequence"] == 2
 
-    counter = DailyCouponCounter.objects.get(date=timezone.localdate())
+    counter = DailyCouponCounter.objects.get(
+        date=timezone.localdate()
+    )
 
     assert counter.count == 2
 
@@ -191,9 +195,12 @@ def test_coupon_scratch_lose(api_client, users):
     assert data["scratched_at"] is not None
 
 
-# 이미 긁은 쿠폰 다시 긁지 못하는지 테스트
+# 이미 결과가 정해진 쿠폰을 다시 긁어도 같은 결과를 반환하는지 테스트
 @pytest.mark.django_db
-def test_coupon_cannot_scratch_twice(api_client, users):
+def test_coupon_scratch_returns_same_result_when_called_twice(
+    api_client,
+    users,
+):
     user = users[0]
 
     api_client.force_authenticate(user=user)
@@ -216,9 +223,20 @@ def test_coupon_cannot_scratch_twice(api_client, users):
     second_response = api_client.post(scratch_url)
 
     assert first_response.status_code == status.HTTP_200_OK
-    assert second_response.status_code == status.HTTP_400_BAD_REQUEST
+    assert second_response.status_code == status.HTTP_200_OK
 
-    assert second_response.json()["message"] == "이미 확인한 쿠폰입니다."
+    first_data = first_response.json()
+    second_data = second_response.json()
+
+    assert first_data["status"] == Coupon.Status.WIN
+    assert second_data["status"] == Coupon.Status.WIN
+
+    assert first_data["coupon_id"] == second_data["coupon_id"]
+    assert first_data["daily_sequence"] == second_data["daily_sequence"]
+
+    coupon = Coupon.objects.get(coupon_id=coupon_id)
+
+    assert coupon.status == Coupon.Status.WIN
 
 
 # 날짜별 쿠폰 발급 수 / 당첨 수 조회 테스트
@@ -267,7 +285,9 @@ def test_coupon_stats(api_client, users):
     )
 
     # 통계 조회
-    response = api_client.get(reverse("coupon-stats"))
+    response = api_client.get(
+        reverse("coupon-stats")
+    )
 
     assert response.status_code == status.HTTP_200_OK
 
