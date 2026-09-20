@@ -1,5 +1,6 @@
 from django.db import transaction
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -27,10 +28,24 @@ class CouponIssueView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        tags=["coupons"],
+        summary="쿠폰 발급",
+        description=(
+            "로그인한 사용자에게 당일 쿠폰을 1개 발급합니다. "
+            "사용자는 하루에 한 번만 쿠폰을 발급받을 수 있습니다."
+        ),
+        request=None,
+        responses={
+            201: CouponSerializer,
+        },
+    )
     @transaction.atomic
     def post(self, request):
         # JWT 인증을 통해 얻은 실제 로그인 유저
-        user = User.objects.select_for_update().get(pk=request.user.pk)
+        user = User.objects.select_for_update().get(
+            pk=request.user.pk
+        )
 
         today = timezone.localdate()
 
@@ -82,6 +97,18 @@ class CouponScratchView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        tags=["coupons"],
+        summary="쿠폰 스크래치 결과 확인",
+        description=(
+            "쿠폰의 당첨 여부를 확인합니다. "
+            "이미 결과가 결정된 쿠폰은 기존 결과를 그대로 반환합니다."
+        ),
+        request=None,
+        responses={
+            200: CouponSerializer,
+        },
+    )
     @transaction.atomic
     def post(self, request, coupon_id):
         try:
@@ -100,7 +127,7 @@ class CouponScratchView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # 이미 긁은 쿠폰 (결과출력)
+        # 이미 긁은 쿠폰은 기존 결과 반환
         if coupon.status in [
             Coupon.Status.WIN,
             Coupon.Status.LOSE,
@@ -172,6 +199,14 @@ class CouponListView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        tags=["coupons"],
+        summary="내 쿠폰 목록 조회",
+        description=(
+            "로그인한 사용자가 보유한 쿠폰 목록을 조회합니다. "
+            "status 쿼리 파라미터를 이용해 쿠폰 상태별로 필터링할 수 있습니다."
+        ),
+    )
     def get(self, request):
         # JWT의 로그인 유저가 가진 쿠폰만 조회
         coupons = Coupon.objects.filter(
@@ -182,7 +217,9 @@ class CouponListView(APIView):
         status_filter = request.query_params.get("status")
 
         if status_filter:
-            coupons = coupons.filter(status=status_filter)
+            coupons = coupons.filter(
+                status=status_filter
+            )
 
         items = CouponListItemSerializer(
             coupons,
@@ -208,13 +245,28 @@ class CouponUseView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        tags=["coupons"],
+        summary="쿠폰 사용 처리",
+        description=(
+            "당첨된 쿠폰에 부스 확인 코드를 입력하여 "
+            "사용 완료 상태로 변경합니다."
+        ),
+        request=CouponUseSerializer,
+    )
     @transaction.atomic
     def post(self, request, coupon_id):
-        serializer = CouponUseSerializer(data=request.data)
+        serializer = CouponUseSerializer(
+            data=request.data
+        )
 
         if not serializer.is_valid():
             errors = (
-                {"verify_code": "확인 코드를 입력해주세요."}
+                {
+                    "verify_code": (
+                        "확인 코드를 입력해주세요."
+                    )
+                }
                 if "verify_code" in serializer.errors
                 else serializer.errors
             )
@@ -229,7 +281,9 @@ class CouponUseView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        verify_code = serializer.validated_data["verify_code"]
+        verify_code = serializer.validated_data[
+            "verify_code"
+        ]
 
         try:
             # 로그인한 본인의 쿠폰만 조회
@@ -245,7 +299,12 @@ class CouponUseView(APIView):
                     "success": False,
                     "code": "COUPON_NOT_USABLE",
                     "message": "사용할 수 없는 쿠폰입니다.",
-                    "errors": {"status": ("본인의 쿠폰이 아니거나 사용할 수 없는 쿠폰입니다.")},
+                    "errors": {
+                        "status": (
+                            "본인의 쿠폰이 아니거나 "
+                            "사용할 수 없는 쿠폰입니다."
+                        )
+                    },
                 },
                 status=status.HTTP_409_CONFLICT,
             )
@@ -263,12 +322,18 @@ class CouponUseView(APIView):
             )
 
         # 기간 만료
-        if coupon.status == Coupon.Status.EXPIRED or coupon.issued_date != timezone.localdate():
+        if (
+            coupon.status == Coupon.Status.EXPIRED
+            or coupon.issued_date
+            != timezone.localdate()
+        ):
             return Response(
                 {
                     "success": False,
                     "code": "COUPON_EXPIRED",
-                    "message": "사용 기간이 만료된 쿠폰입니다.",
+                    "message": (
+                        "사용 기간이 만료된 쿠폰입니다."
+                    ),
                     "errors": {},
                 },
                 status=status.HTTP_409_CONFLICT,
@@ -298,7 +363,9 @@ class CouponUseView(APIView):
                     "code": "INVALID_VERIFY_CODE",
                     "message": "올바른 코드가 아닙니다.",
                     "errors": {
-                        "verify_code": "확인 코드가 일치하지 않습니다.",
+                        "verify_code": (
+                            "확인 코드가 일치하지 않습니다."
+                        ),
                     },
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -331,8 +398,20 @@ class CouponUseView(APIView):
 
 # 날짜별 쿠폰 발급/당첨 현황 조회
 class CouponStatsView(APIView):
+
+    @extend_schema(
+        tags=["coupons"],
+        summary="날짜별 쿠폰 발급 및 당첨 현황 조회",
+        description=(
+            "날짜별 쿠폰 발급 수와 당첨 수를 조회합니다. "
+            "사용 완료된 쿠폰도 당첨 수에 포함됩니다."
+        ),
+    )
     def get(self, request):
-        counters = DailyCouponCounter.objects.all().order_by("date")
+        counters = (
+            DailyCouponCounter.objects.all()
+            .order_by("date")
+        )
 
         stats = []
 
@@ -364,7 +443,9 @@ class CouponStatsView(APIView):
             {
                 "success": True,
                 "code": "COUPON_STATS_SUCCESS",
-                "message": "쿠폰 발급 및 당첨 현황을 조회했습니다.",
+                "message": (
+                    "쿠폰 발급 및 당첨 현황을 조회했습니다."
+                ),
                 "data": serializer.data,
             },
             status=status.HTTP_200_OK,
