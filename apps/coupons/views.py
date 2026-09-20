@@ -100,13 +100,14 @@ class CouponScratchView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # 이미 긁은 쿠폰
-        if coupon.status != Coupon.Status.UNSCRATCHED:
+        # 이미 긁은 쿠폰 (결과출력)
+        if coupon.status in [
+            Coupon.Status.WIN,
+            Coupon.Status.LOSE,
+        ]:
             return Response(
-                {
-                    "message": "이미 확인한 쿠폰입니다.",
-                },
-                status=status.HTTP_400_BAD_REQUEST,
+                CouponSerializer(coupon).data,
+                status=status.HTTP_200_OK,
             )
 
         # 당일 쿠폰만 스크래치 가능
