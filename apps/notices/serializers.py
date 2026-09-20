@@ -246,6 +246,7 @@ def to_user_notice_detail(notice: Notice) -> dict:
         "updated_at": notice.updated_at,
     }
 
+
 class NoticeRollingItemSerializer(serializers.ModelSerializer):
     notice_id = serializers.IntegerField(source="id")
     created_at = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%S")

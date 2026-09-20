@@ -271,6 +271,7 @@ class NoticeDetailView(UserNoticeAPIView):
             to_user_notice_detail(notice),
         )
 
+
 class NoticeRollingListView(APIView):
     """홈 상단 롤링 공지 목록 조회 API (비로그인 사용자 가능)"""
 

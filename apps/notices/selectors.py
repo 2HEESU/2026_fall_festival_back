@@ -1,6 +1,6 @@
 """Notices data selectors."""
 
-from django.db.models import Case, QuerySet, Value, When
+from django.db.models import Case, QuerySet, Value, When, IntegerField
 
 from apps.notices.models import Notice
 

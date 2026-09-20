@@ -12,5 +12,5 @@ urlpatterns = [
     path("images/", views.AdminNoticeImageUploadView.as_view(), name="admin-notice-image-upload"),
     path("<int:notice_id>/", views.AdminNoticeDetailView.as_view(), name="admin-notice-detail"),
 
-    path("rolling/", NoticeRollingListView.as_view(), name="notice-rolling-list"),
+    path("rolling/", views.NoticeRollingListView.as_view(), name="notice-rolling-list"),
 ]
