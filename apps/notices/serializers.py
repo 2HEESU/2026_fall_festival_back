@@ -245,3 +245,16 @@ def to_user_notice_detail(notice: Notice) -> dict:
         "created_at": notice.created_at,
         "updated_at": notice.updated_at,
     }
+
+class NoticeRollingItemSerializer(serializers.ModelSerializer):
+    notice_id = serializers.IntegerField(source="id")
+    created_at = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%S")
+
+    class Meta:
+        model = Notice
+        fields = ["notice_id", "type", "title", "created_at"]
+
+
+class NoticeRollingListResponseSerializer(serializers.Serializer):
+    """Swagger 문서화용 응답 래퍼 Serializer"""
+    notices = NoticeRollingItemSerializer(many=True)

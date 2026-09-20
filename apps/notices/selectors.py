@@ -34,3 +34,16 @@ def get_notice_by_id(notice_id: int) -> Notice | None:
 def get_user_notices_queryset(notice_type: str = "ALL") -> QuerySet[Notice]:
     """일반 사용자용 공지사항 목록 쿼리셋을 반환합니다."""
     return get_admin_notices_queryset(notice_type=notice_type)
+
+def get_rolling_notices() -> QuerySet[Notice]:
+    """상단 롤링 배너용 공지 목록을 조회합니다."""
+    return (
+        Notice.objects.annotate(
+            priority=Case(
+                When(type=Notice.Type.URGENT, then=Value(1)),
+                default=Value(2),
+                output_field=IntegerField(),
+            )
+        )
+        .order_by("priority", "-created_at")[:3]
+    )
