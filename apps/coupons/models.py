@@ -1,14 +1,6 @@
 from django.db import models
 
 
-# 테스트용 User 카카오톡 로그인 구현되며 고칠 예정
-class User(models.Model):
-    name = models.CharField(max_length=100)
-
-    def __str__(self):
-        return self.name
-
-
 # 당첨 번호
 class WinningNumber(models.Model):
     number = models.PositiveIntegerField(unique=True)
@@ -39,7 +31,7 @@ class Coupon(models.Model):
         EXPIRED = "EXPIRED", "기간 만료"
 
     # 쿠폰 소유자
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="coupons")
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="coupons")
 
     # 쿠폰을 발급받은 날짜
     issued_date = models.DateField()

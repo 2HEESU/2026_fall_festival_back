@@ -4,10 +4,10 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from apps.accounts.models import User
 from apps.coupons.models import (
     Coupon,
     DailyCouponCounter,
-    User,
     WinningNumber,
 )
 
@@ -20,8 +20,14 @@ def api_client():
 @pytest.fixture
 def users():
     return [
-        User.objects.create(name="테스트유저1"),
-        User.objects.create(name="테스트유저2"),
+        User.objects.create(
+            kakao_id=100001,
+            nickname="테스트유저1",
+        ),
+        User.objects.create(
+            kakao_id=100002,
+            nickname="테스트유저2",
+        ),
     ]
 
 
@@ -30,11 +36,10 @@ def users():
 def test_coupon_issue(api_client, users):
     user = users[0]
 
+    api_client.force_authenticate(user=user)
+
     response = api_client.post(
         reverse("coupon-issue"),
-        {
-            "user": user.id,
-        },
         format="json",
     )
 
@@ -61,17 +66,17 @@ def test_coupon_issue(api_client, users):
 def test_coupon_duplicate_issue(api_client, users):
     user = users[0]
 
+    api_client.force_authenticate(user=user)
+
     url = reverse("coupon-issue")
 
     first_response = api_client.post(
         url,
-        {"user": user.id},
         format="json",
     )
 
     second_response = api_client.post(
         url,
-        {"user": user.id},
         format="json",
     )
 
@@ -92,15 +97,19 @@ def test_coupon_duplicate_issue(api_client, users):
 def test_daily_sequence_increases(api_client, users):
     issue_url = reverse("coupon-issue")
 
+    # 1번 유저
+    api_client.force_authenticate(user=users[0])
+
     response1 = api_client.post(
         issue_url,
-        {"user": users[0].id},
         format="json",
     )
 
+    # 2번 유저
+    api_client.force_authenticate(user=users[1])
+
     response2 = api_client.post(
         issue_url,
-        {"user": users[1].id},
         format="json",
     )
 
@@ -118,12 +127,15 @@ def test_daily_sequence_increases(api_client, users):
 # 쿠폰 당첨 스크래치 테스트
 @pytest.mark.django_db
 def test_coupon_scratch_win(api_client, users):
-    # 첫 번째 발급 쿠폰이 당첨되도록 설정
+    user = users[0]
+
+    api_client.force_authenticate(user=user)
+
+    # 첫 번째 발급 쿠폰이 당첨
     WinningNumber.objects.create(number=1)
 
     issue_response = api_client.post(
         reverse("coupon-issue"),
-        {"user": users[0].id},
         format="json",
     )
 
@@ -152,10 +164,13 @@ def test_coupon_scratch_win(api_client, users):
 # 쿠폰 꽝 스크래치 테스트
 @pytest.mark.django_db
 def test_coupon_scratch_lose(api_client, users):
-    # 당첨 번호를 만들지 않으므로 daily_sequence=1은 꽝
+    user = users[0]
+
+    api_client.force_authenticate(user=user)
+
+    # 당첨번호 없음 -> daily_sequence=1은 꽝
     issue_response = api_client.post(
         reverse("coupon-issue"),
-        {"user": users[0].id},
         format="json",
     )
 
@@ -179,11 +194,14 @@ def test_coupon_scratch_lose(api_client, users):
 # 이미 긁은 쿠폰 다시 긁지 못하는지 테스트
 @pytest.mark.django_db
 def test_coupon_cannot_scratch_twice(api_client, users):
+    user = users[0]
+
+    api_client.force_authenticate(user=user)
+
     WinningNumber.objects.create(number=1)
 
     issue_response = api_client.post(
         reverse("coupon-issue"),
-        {"user": users[0].id},
         format="json",
     )
 
@@ -210,29 +228,36 @@ def test_coupon_stats(api_client, users):
     WinningNumber.objects.create(number=1)
 
     # 1번 유저 발급
+    api_client.force_authenticate(user=users[0])
+
     response1 = api_client.post(
         reverse("coupon-issue"),
-        {"user": users[0].id},
         format="json",
     )
 
     # 2번 유저 발급
+    api_client.force_authenticate(user=users[1])
+
     response2 = api_client.post(
         reverse("coupon-issue"),
-        {"user": users[1].id},
         format="json",
     )
 
     coupon1_id = response1.json()["coupon_id"]
     coupon2_id = response2.json()["coupon_id"]
 
-    # 둘 다 스크래치
+    # 1번 유저 쿠폰 긁기
+    api_client.force_authenticate(user=users[0])
+
     api_client.post(
         reverse(
             "coupon-scratch",
             kwargs={"coupon_id": coupon1_id},
         )
     )
+
+    # 2번 유저 쿠폰 긁기
+    api_client.force_authenticate(user=users[1])
 
     api_client.post(
         reverse(
@@ -260,5 +285,5 @@ def test_coupon_stats(api_client, users):
     # 오늘 총 2개 발급
     assert stats["issued_count"] == 2
 
-    # daily_sequence=1만 당첨번호
+    # daily_sequence=1만 당첨
     assert stats["win_count"] == 1
