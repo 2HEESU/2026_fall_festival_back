@@ -143,6 +143,40 @@ class TestLanternList:
         assert body["has_next"] is True
         assert len(body["items"]) == 2
 
+    def test_list_marks_is_mine_for_owner_and_others(self, auth_client, user, other_user, booth):
+        mine = Lantern.objects.create(
+            user=user, booth=booth, message="내 등불", festival_date=FESTIVAL_DAY
+        )
+        other_booth = Booth.objects.create(
+            name="다른 부스", place_type=Booth.PlaceType.BOOTH, category=Booth.Category.ETC
+        )
+        others = Lantern.objects.create(
+            user=other_user, booth=other_booth, message="남의 등불", festival_date=FESTIVAL_DAY
+        )
+
+        response = auth_client.get("/api/lanterns/")
+        items = {item["lantern_id"]: item for item in response.json()["data"]["items"]}
+        assert items[mine.id]["is_mine"] is True
+        assert items[others.id]["is_mine"] is False
+
+    def test_list_is_mine_false_when_anonymous(self, client, user, booth):
+        lantern = Lantern.objects.create(
+            user=user, booth=booth, message="등불", festival_date=FESTIVAL_DAY
+        )
+
+        response = client.get("/api/lanterns/")
+        items = {item["lantern_id"]: item for item in response.json()["data"]["items"]}
+        assert items[lantern.id]["is_mine"] is False
+
+    def test_list_includes_updated_at(self, client, user, booth):
+        lantern = Lantern.objects.create(
+            user=user, booth=booth, message="등불", festival_date=FESTIVAL_DAY
+        )
+
+        response = client.get("/api/lanterns/")
+        items = {item["lantern_id"]: item for item in response.json()["data"]["items"]}
+        assert items[lantern.id]["updated_at"] is not None
+
 
 @pytest.mark.django_db
 class TestLanternDetail:
@@ -187,3 +221,20 @@ class TestLanternDetail:
         response = client.get(f"/api/lanterns/{lantern.id}/")
         assert response.status_code == 404
         assert response.json()["code"] == "LANTERN_NOT_FOUND"
+
+    def test_detail_is_mine_true_for_owner(self, auth_client, user, booth):
+        lantern = Lantern.objects.create(
+            user=user, booth=booth, message="화이팅", festival_date=FESTIVAL_DAY
+        )
+        response = auth_client.get(f"/api/lanterns/{lantern.id}/")
+        body = response.json()["data"]
+        assert body["is_mine"] is True
+        assert body["updated_at"] is not None
+
+    def test_detail_is_mine_false_for_others(self, auth_client, other_user, booth):
+        lantern = Lantern.objects.create(
+            user=other_user, booth=booth, message="남의 등불", festival_date=FESTIVAL_DAY
+        )
+        response = auth_client.get(f"/api/lanterns/{lantern.id}/")
+        body = response.json()["data"]
+        assert body["is_mine"] is False
