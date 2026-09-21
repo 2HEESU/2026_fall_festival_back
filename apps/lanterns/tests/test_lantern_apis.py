@@ -11,7 +11,7 @@ from rest_framework.test import APIClient
 from apps.accounts.models import User
 from apps.booths.models import Booth
 from apps.lanterns.models import Lantern
-from apps.lanterns.serializers import LanternCreateSerializer
+from apps.lanterns.serializers import LanternCreateSerializer, LanternUpdateSerializer
 from apps.lanterns.views import LanternViewSet
 from common.exceptions import ApiError
 
@@ -283,6 +283,27 @@ class TestLanternCreate:
 
         assert exc_info.value.code == "DAILY_LIMIT_EXCEEDED"
 
+    def test_create_computes_is_first_today_from_locked_recheck(self, user, booth):
+        with _patch_today():
+            today = timezone.localdate()
+            Lantern.objects.create(user=user, booth=booth, message="선점", festival_date=today)
+
+            other_booth = Booth.objects.create(
+                name="락체크부스",
+                place_type=Booth.PlaceType.BOOTH,
+                category=Booth.Category.ETC,
+            )
+
+            serializer = LanternCreateSerializer(context={"request": SimpleNamespace(user=user)})
+            serializer._today = today
+            serializer._is_first_today = True
+
+            serializer.create(
+                {"booth_id": other_booth.id, "nickname": "익명의 코끼리", "message": "두번째!"}
+            )
+
+        assert serializer._is_first_today is False
+
 
 @pytest.mark.django_db
 class TestLanternUpdate:
@@ -326,6 +347,41 @@ class TestLanternUpdate:
         response = auth_client.patch(f"/api/lanterns/{lantern.id}/", {"message": "수정 시도"})
         assert response.status_code == 409
         assert response.json()["code"] == "ALREADY_DELETED"
+
+    def test_update_is_safe_under_concurrent_delete(self, user, booth):
+        lantern = Lantern.objects.create(
+            user=user, booth=booth, message="원래 메시지", festival_date=FESTIVAL_DAY
+        )
+
+        Lantern.objects.filter(id=lantern.id).update(
+            deleted_at=timezone.now(), deleted_by=Lantern.DeletedBy.USER
+        )
+
+        serializer = LanternUpdateSerializer(lantern, data={"message": "수정 시도"}, partial=True)
+        assert serializer.is_valid(), serializer.errors
+
+        with pytest.raises(ApiError) as exc_info:
+            serializer.save()
+
+        assert exc_info.value.code == "ALREADY_DELETED"
+
+        lantern.refresh_from_db()
+        assert lantern.message == "원래 메시지"
+
+    def test_update_bumps_updated_at(self, auth_client, user, booth):
+        lantern = Lantern.objects.create(
+            user=user, booth=booth, message="원래 메시지", festival_date=FESTIVAL_DAY
+        )
+        original_updated_at = lantern.updated_at
+
+        with _patch_today_views():
+            response = auth_client.patch(
+                f"/api/lanterns/{lantern.id}/", {"message": "수정된 메시지"}
+            )
+        assert response.status_code == 200
+
+        lantern.refresh_from_db()
+        assert lantern.updated_at > original_updated_at
 
     def test_update_rejects_not_today(self, auth_client, user, booth):
         # 10-4: 당일 작성한 등불만 수정 가능, 지난 날짜 등불은 삭제만 가능
