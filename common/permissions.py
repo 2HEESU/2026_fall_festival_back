@@ -12,20 +12,27 @@ from rest_framework.permissions import BasePermission
 from .exceptions import Unauthorized
 
 
+def is_admin_request(request) -> bool:
+    """요청이 관리자 토큰(Bearer ADMIN_API_TOKEN)을 포함하고 있는지 확인합니다."""
+    if getattr(request, "is_admin", False):
+        return True
+    header = request.headers.get("Authorization", "")
+    scheme, _, token = header.partition(" ")
+    expected = getattr(settings, "ADMIN_API_TOKEN", "")
+    return (
+        scheme.lower() == "bearer"
+        and bool(token.strip())
+        and bool(expected)
+        and token.strip() == expected
+    )
+
+
 class IsAdmin(BasePermission):
     """Require ``Authorization: Bearer {admin_token}``."""
 
     def has_permission(self, request, view):
-        header = request.headers.get("Authorization", "")
-        scheme, _, token = header.partition(" ")
-
-        expected = getattr(settings, "ADMIN_API_TOKEN", "")
-        if scheme.lower() != "bearer" or not token.strip() or not expected:
-            raise Unauthorized()
-        if token.strip() != expected:
+        if not is_admin_request(request):
             raise Unauthorized()
 
-        # TODO(admins): replace with the authenticated Admin instance once
-        #   apps.admins lands; views only read request.admin_id.
         request.admin_id = None
         return True

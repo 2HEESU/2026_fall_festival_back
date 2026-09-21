@@ -5,13 +5,13 @@ from apps.accounts.models import User
 from apps.booths.models import Booth
 from apps.lanterns.models import Lantern, LanternReport
 
-ADMIN_LANTERNS_URL = "/api/admin/lanterns/"
+ADMIN_LANTERNS_URL = "/api/lanterns/"
 
 
 @pytest.mark.django_db
 class TestAdminLanternListAPI:
     def test_unauthorized_access_denied(self, client):
-        response = client.get(ADMIN_LANTERNS_URL)
+        response = client.get(ADMIN_LANTERNS_URL, HTTP_AUTHORIZATION="Bearer invalid-token")
         assert response.status_code == 401
         data = response.json()
         assert data["success"] is False
@@ -164,7 +164,7 @@ class TestAdminLanternListAPI:
 @pytest.mark.django_db
 class TestAdminLanternDetailAPI:
     def test_unauthorized_access_denied(self, client):
-        response = client.get(f"{ADMIN_LANTERNS_URL}1/")
+        response = client.get(f"{ADMIN_LANTERNS_URL}1/", HTTP_AUTHORIZATION="Bearer invalid-token")
         assert response.status_code == 401
         data = response.json()
         assert data["success"] is False

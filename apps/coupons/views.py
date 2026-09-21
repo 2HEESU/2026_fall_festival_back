@@ -16,6 +16,7 @@ from .serializers import (
     CouponListItemSerializer,
     CouponSerializer,
     CouponUseSerializer,
+    CouponStatsSerializer,
 )
 
 
@@ -294,6 +295,44 @@ class CouponUseView(APIView):
                     "status": coupon.status,
                     "used_at": coupon.used_at,
                 },
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+# 날짜별 쿠폰 발급/당첨 현황 조회
+class CouponStatsView(APIView):
+    def get(self, request):
+        counters = DailyCouponCounter.objects.all().order_by("date")
+
+        stats = []
+
+        for counter in counters:
+            win_count = Coupon.objects.filter(
+                issued_date=counter.date,
+                status__in=[
+                    Coupon.Status.WIN,
+                    Coupon.Status.USED,
+                ],
+                deleted_at__isnull=True,
+            ).count()
+
+            stats.append(
+                {
+                    "date": counter.date,
+                    "issued_count": counter.count,
+                    "win_count": win_count,
+                }
+            )
+
+        serializer = CouponStatsSerializer(stats, many=True)
+
+        return Response(
+            {
+                "success": True,
+                "code": "COUPON_STATS_SUCCESS",
+                "message": "쿠폰 발급 및 당첨 현황을 조회했습니다.",
+                "data": serializer.data,
             },
             status=status.HTTP_200_OK,
         )

@@ -6,6 +6,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from apps.accounts.models import RefreshToken, User
+from apps.accounts.views import _hash_token
 
 LOGIN_URL = "/api/accounts/login/"
 
@@ -65,7 +66,9 @@ class TestKakaoLogin:
         assert "access_token" in body["data"]
         assert "refresh_token" in body["data"]
         assert User.objects.filter(kakao_id=111222333).exists()
-        assert RefreshToken.objects.filter(token=body["data"]["refresh_token"]).exists()
+        assert RefreshToken.objects.filter(
+            token=_hash_token(body["data"]["refresh_token"])
+        ).exists()
 
     def test_existing_user_login_updates_profile(self, client):
         User.objects.create(kakao_id=555, nickname="OldNick")
