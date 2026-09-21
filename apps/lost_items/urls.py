@@ -11,7 +11,7 @@ from .views import (
 app_name = "admin_lost_items"
 
 urlpatterns = [
-    path("images/", AdminLostItemImageUploadView.as_view(), name="image-upload"),
-    path("", AdminLostItemListView.as_view(), name="list"),
-    path("<int:lost_item_id>/", AdminLostItemDetailView.as_view(), name="detail"),
+    path("images/", AdminLostItemImageUploadView.as_view(), name="admin-image-upload"),
+    path("", AdminLostItemListView.as_view(), name="admin-list"),
+    path("<int:lost_item_id>/", AdminLostItemDetailView.as_view(), name="admin-detail"),
 ]

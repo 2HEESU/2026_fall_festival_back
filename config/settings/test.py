@@ -4,7 +4,8 @@ from .base import *  # noqa: F403
 
 DEBUG = False
 SECRET_KEY = "test-only-secret-key"
-ALLOWED_HOSTS = ["testserver"]
+ALLOWED_HOSTS = ["testserver", "admin.testserver"]
+ADMIN_HOSTS = ["admin.testserver"]
 
 DATABASES = {
     "default": {
