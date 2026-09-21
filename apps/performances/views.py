@@ -50,10 +50,7 @@ class PerformanceListView(PerformanceAPIView):
             raise InvalidInput(
                 code="INVALID_FESTIVAL_DATE",
                 message="축제 기간 내의 날짜가 아닙니다.",
-                errors={
-                    key: str(value[0])
-                    for key, value in query.errors.items()
-                },
+                errors={key: str(value[0]) for key, value in query.errors.items()},
             )
 
         now = timezone.localtime()

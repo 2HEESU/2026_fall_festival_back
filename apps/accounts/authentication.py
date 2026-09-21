@@ -29,6 +29,12 @@ class JWTAuthentication(BaseAuthentication):
         except ValueError:
             raise AuthenticationFailed("Invalid Authorization header format") from None
 
+        # 관리자 토큰인 경우 request.is_admin 설정 후 통과 (JWT decode 스킵)
+        admin_expected = getattr(settings, "ADMIN_API_TOKEN", "")
+        if admin_expected and token == admin_expected:
+            request.is_admin = True
+            return (None, token)
+
         # jwt.decode로 토큰 검증
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])

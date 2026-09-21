@@ -5,6 +5,7 @@ from .views import (
     CouponListView,
     CouponScratchView,
     CouponUseView,
+    CouponStatsView,
 )
 
 urlpatterns = [
@@ -16,4 +17,6 @@ urlpatterns = [
     path("<int:coupon_id>/scratch/", CouponScratchView.as_view(), name="coupon-scratch"),
     # 쿠폰 사용 처리
     path("<int:coupon_id>/use/", CouponUseView.as_view(), name="coupon-use"),
+    # 쿠폰 현황
+    path("stats/", CouponStatsView.as_view(), name="coupon-stats"),
 ]

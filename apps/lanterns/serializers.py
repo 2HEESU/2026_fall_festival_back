@@ -239,3 +239,16 @@ def to_admin_lantern_detail(lantern: Lantern, top_reason: str | None = None) -> 
         "top_report_reason": top_reason,
         "created_at": lantern.created_at,
     }
+
+
+class AdminLanternDeleteResponseSerializer(serializers.Serializer):
+    """관리자 등불 삭제(블라인드) 응답 스키마."""
+
+    success = serializers.BooleanField(required=True, help_text="성공 여부 (True)")
+    code = serializers.CharField(
+        required=True, help_text="응답 코드 (ADMIN_LANTERN_DELETE_SUCCESS)"
+    )
+    message = serializers.CharField(
+        required=True, help_text="응답 메시지 (등불이 성공적으로 삭제되었습니다.)"
+    )
+    data = serializers.DictField(required=True, help_text="응답 데이터 (빈 객체 {})")

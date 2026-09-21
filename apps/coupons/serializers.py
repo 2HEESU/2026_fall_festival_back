@@ -63,3 +63,9 @@ class CouponSerializer(serializers.ModelSerializer):
             "scratched_at",
             "used_at",
         ]
+
+
+class CouponStatsSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    issued_count = serializers.IntegerField()
+    win_count = serializers.IntegerField()

@@ -5,50 +5,68 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Performance',
+            name="Performance",
             fields=[
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(blank=True, null=True)),
-                ('deleted_at', models.DateTimeField(blank=True, null=True)),
-                ('performance_id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('team_name', models.CharField(max_length=100)),
-                ('affiliation', models.CharField(blank=True, max_length=100, null=True)),
-                ('description', models.TextField(blank=True, null=True)),
-                ('image_url', models.URLField(blank=True, max_length=500, null=True)),
-                ('festival_date', models.DateField()),
-                ('start_at', models.DateTimeField()),
-                ('end_at', models.DateTimeField()),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(blank=True, null=True)),
+                ("deleted_at", models.DateTimeField(blank=True, null=True)),
+                ("performance_id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("team_name", models.CharField(max_length=100)),
+                ("affiliation", models.CharField(blank=True, max_length=100, null=True)),
+                ("description", models.TextField(blank=True, null=True)),
+                ("image_url", models.URLField(blank=True, max_length=500, null=True)),
+                ("festival_date", models.DateField()),
+                ("start_at", models.DateTimeField()),
+                ("end_at", models.DateTimeField()),
             ],
             options={
-                'db_table': 'performance',
-                'ordering': ['start_at', 'performance_id'],
-                'indexes': [models.Index(fields=['deleted_at', 'festival_date', 'start_at'], name='performance_deleted_aeff9d_idx'), models.Index(fields=['deleted_at', 'start_at'], name='performance_deleted_77e2f8_idx')],
+                "db_table": "performance",
+                "ordering": ["start_at", "performance_id"],
+                "indexes": [
+                    models.Index(
+                        fields=["deleted_at", "festival_date", "start_at"],
+                        name="performance_deleted_aeff9d_idx",
+                    ),
+                    models.Index(
+                        fields=["deleted_at", "start_at"], name="performance_deleted_77e2f8_idx"
+                    ),
+                ],
             },
         ),
         migrations.CreateModel(
-            name='Song',
+            name="Song",
             fields=[
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(blank=True, null=True)),
-                ('deleted_at', models.DateTimeField(blank=True, null=True)),
-                ('song_id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('title', models.CharField(max_length=200)),
-                ('artist', models.CharField(blank=True, max_length=100, null=True)),
-                ('sort_order', models.PositiveIntegerField()),
-                ('performance', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='songs', to='performances.performance')),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(blank=True, null=True)),
+                ("deleted_at", models.DateTimeField(blank=True, null=True)),
+                ("song_id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("title", models.CharField(max_length=200)),
+                ("artist", models.CharField(blank=True, max_length=100, null=True)),
+                ("sort_order", models.PositiveIntegerField()),
+                (
+                    "performance",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="songs",
+                        to="performances.performance",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'song',
-                'ordering': ['sort_order', 'song_id'],
-                'indexes': [models.Index(fields=['performance', 'deleted_at', 'sort_order'], name='song_perform_3af48f_idx')],
+                "db_table": "song",
+                "ordering": ["sort_order", "song_id"],
+                "indexes": [
+                    models.Index(
+                        fields=["performance", "deleted_at", "sort_order"],
+                        name="song_perform_3af48f_idx",
+                    )
+                ],
             },
         ),
     ]

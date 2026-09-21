@@ -1,9 +1,5 @@
 """Accounts API views."""
 
-import secrets
-from datetime import datetime, timedelta
-
-import jwt
 import requests
 from django.conf import settings
 from django.utils import timezone
@@ -13,46 +9,7 @@ from rest_framework.views import APIView
 
 from .models import RefreshToken, User
 from .serializers import LoginSerializer, RefreshTokenSerializer, UserSerializer
-
-
-# refresh_token 발급
-def issue_refresh_token(user):
-    RefreshToken.objects.filter(user=user, expires_at__lt=timezone.now()).delete()
-
-    MAX_TOKENS_PER_USER = 5
-    existing = RefreshToken.objects.filter(user=user).order_by("created_at")
-    if existing.count() >= MAX_TOKENS_PER_USER:
-        overflow_count = existing.count() - MAX_TOKENS_PER_USER + 1
-        oldest_ids = list(existing.values_list("id", flat=True)[:overflow_count])
-        RefreshToken.objects.filter(id__in=oldest_ids).delete()
-
-    token = secrets.token_urlsafe(32)
-
-    RefreshToken.objects.create(
-        user=user,
-        token=token,
-        expires_at=timezone.now() + timedelta(days=7),
-    )
-
-    return token
-
-
-# jwt_token 생성
-def generate_jwt_token(user_id):
-
-    now = datetime.now()
-
-    expired_date = now + timedelta(hours=24)
-
-    payload = {"user_id": user_id, "iat": now.timestamp(), "exp": expired_date.timestamp()}
-
-    token = jwt.encode(
-        payload,
-        settings.SECRET_KEY,
-        algorithm="HS256",  # 대칭키 암호화
-    )
-
-    return token
+from .services import _hash_token, generate_jwt_token, issue_refresh_token
 
 
 class KakaoLoginView(APIView):
@@ -172,19 +129,10 @@ class KakaoLoginView(APIView):
 
         # DB에 사용자 저장 및 조회
         try:
-            user = User.objects.get(kakao_id=kakao_id)
-            user.nickname = nickname
-            user.profile_image = profile_image
-            user.save()
-
-            is_new_user = False
-
-        except User.DoesNotExist:
-            user = User.objects.create(
-                kakao_id=kakao_id, nickname=nickname, profile_image=profile_image
+            user, is_new_user = User.objects.update_or_create(
+                kakao_id=kakao_id,
+                defaults={"nickname": nickname, "profile_image": profile_image},
             )
-
-            is_new_user = True
 
         except Exception as error:
             return Response(
@@ -248,7 +196,7 @@ class TokenRefreshView(APIView):
         token_value = serializer.validated_data["refresh_token"]
 
         try:
-            refresh_token = RefreshToken.objects.get(token=token_value)
+            refresh_token = RefreshToken.objects.get(token=_hash_token(token_value))
         except RefreshToken.DoesNotExist:
             return Response(
                 {
@@ -260,8 +208,12 @@ class TokenRefreshView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        if refresh_token.expires_at < timezone.now():
-            refresh_token.delete()
+        user = refresh_token.user
+        is_expired = refresh_token.expires_at < timezone.now()
+
+        deleted_count, _ = RefreshToken.objects.filter(id=refresh_token.id).delete()
+
+        if is_expired or deleted_count == 0:
             return Response(
                 {
                     "success": False,
@@ -271,9 +223,6 @@ class TokenRefreshView(APIView):
                 },
                 status=status.HTTP_401_UNAUTHORIZED,
             )
-
-        user = refresh_token.user
-        refresh_token.delete()  # 기존 것 폐기
 
         new_access_token = generate_jwt_token(user.id)
         new_refresh_token = issue_refresh_token(user)
@@ -287,6 +236,35 @@ class TokenRefreshView(APIView):
                     "access_token": new_access_token,
                     "refresh_token": new_refresh_token,
                 },
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class LogoutView(APIView):
+    """로그아웃 함수 (refresh_token 무효화)"""
+
+    def post(self, request):
+        serializer = RefreshTokenSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "success": False,
+                    "code": "400",
+                    "message": "입력값이 올바르지 않습니다.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        token_value = serializer.validated_data["refresh_token"]
+        RefreshToken.objects.filter(token=_hash_token(token_value)).delete()
+
+        return Response(
+            {
+                "success": True,
+                "code": "LOGOUT_SUCCESS",
+                "message": "로그아웃 되었습니다",
             },
             status=status.HTTP_200_OK,
         )
