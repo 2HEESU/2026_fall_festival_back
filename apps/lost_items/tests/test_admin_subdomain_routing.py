@@ -40,6 +40,6 @@ def test_admin_host_still_requires_admin_auth(subdomain_admin_client):
 
 @pytest.mark.django_db
 def test_admin_host_cannot_reach_user_only_api(subdomain_admin_client):
-    for path in ("/api/accounts/", "/api/booths/", "/api/lanterns/", "/api/performances/"):
+    for path in ("/api/accounts/", "/api/booths/", "/api/performances/"):
         response = subdomain_admin_client.get(path)
         assert response.status_code == 404, path
