@@ -1,10 +1,9 @@
 services:
-  # 1. Redis 캐시 컨테이너 (Look-aside 패턴 전용)
+  # 1. Redis 캐시 컨테이너 (Look-aside 패턴 전용, 256MB 제한)
   redis:
     image: redis:7-alpine
     container_name: dgufesta_redis
     restart: unless-stopped
-    # 최대 메모리 512MB 제한 및 용량 초과 시 오래된 캐시부터 자동 삭제 정책
     command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
     volumes:
       - redis_data:/data
@@ -33,18 +32,17 @@ services:
     networks:
       - dgufesta_net
 
-  # 3. Nginx 웹서버 (리버스 프록시 및 정적 서빙)
+  # 3. Nginx 웹서버 (포트 80 개방)
   nginx:
     image: nginx:alpine
     container_name: dgufesta_nginx
     restart: unless-stopped
     ports:
-      - "127.0.0.1:80:80"     # Cloudflare Tunnel 전용 로컬 바인딩 (외부 직접 침입 차단)
+      - "80:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
       - static_volume:/app/staticfiles
       - media_volume:/app/media
-      # React 프론트엔드 빌드 파일 마운트 (FE 팀 전달물 위치)
       - ../frontend/dist/user:/usr/share/nginx/html/user
       - ../frontend/dist/admin:/usr/share/nginx/html/admin
     depends_on:
