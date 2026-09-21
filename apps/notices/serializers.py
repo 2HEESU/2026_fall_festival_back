@@ -245,3 +245,25 @@ def to_user_notice_detail(notice: Notice) -> dict:
         "created_at": notice.created_at,
         "updated_at": notice.updated_at,
     }
+
+
+class NoticeRollingItemSerializer(serializers.ModelSerializer):
+    notice_id = serializers.IntegerField(source="id")
+    created_at = serializers.DateTimeField(format="%Y-%m-%dT%H:%M:%S")
+
+    class Meta:
+        model = Notice
+        fields = ["notice_id", "type", "title", "created_at"]
+
+
+class NoticeRollingListDataSerializer(serializers.Serializer):
+    """공통 응답 data 내부 래퍼 Serializer"""
+    notices = NoticeRollingItemSerializer(many=True)
+
+
+class NoticeRollingListResponseSerializer(serializers.Serializer):
+    """Swagger 문서용 공통 응답 포맷 Serializer"""
+    success = serializers.BooleanField(default=True)
+    code = serializers.CharField(default="NOTICE_ROLLING_LIST_SUCCESS")
+    message = serializers.CharField(default="상단 롤링 공지 목록을 조회했습니다.")
+    data = NoticeRollingListDataSerializer()
