@@ -318,6 +318,37 @@ class TestCouponUseAPI:
         assert response.status_code == 409
         assert response.json()["code"] == "COUPON_NOT_WIN"
 
+    def test_use_within_valid_days(
+        self,
+        api_client,
+        user1,
+    ):
+        BoothVerifyCode.objects.create(
+            code="lovelion14",
+        )
+
+        two_days_ago = timezone.localdate() - datetime.timedelta(days=2)
+
+        coupon = Coupon.objects.create(
+            user=user1,
+            issued_date=two_days_ago,
+            daily_sequence=1,
+            status=Coupon.Status.WIN,
+        )
+
+        api_client.force_authenticate(user=user1)
+
+        response = api_client.post(
+            use_url(coupon.coupon_id),
+            {
+                "verify_code": "lovelion14",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 200
+        assert response.json()["code"] == "COUPON_USE_SUCCESS"
+
     def test_use_expired(
         self,
         api_client,
@@ -327,11 +358,11 @@ class TestCouponUseAPI:
             code="lovelion14",
         )
 
-        yesterday = timezone.localdate() - datetime.timedelta(days=1)
+        three_days_ago = timezone.localdate() - datetime.timedelta(days=3)
 
         coupon = Coupon.objects.create(
             user=user1,
-            issued_date=yesterday,
+            issued_date=three_days_ago,
             daily_sequence=1,
             status=Coupon.Status.WIN,
         )
