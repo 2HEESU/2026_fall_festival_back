@@ -1,7 +1,7 @@
 """Lanterns request and response serializers."""
 
 from django.conf import settings
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import F
 from django.utils import timezone
 from rest_framework import serializers, status
@@ -88,9 +88,28 @@ class LanternCreateSerializer(ForbiddenWordValidationMixin, serializers.ModelSer
         user = self.context["request"].user
         booth_id = validated_data["booth_id"]
 
-        with transaction.atomic():
-            lantern = Lantern.objects.create(user=user, festival_date=self._today, **validated_data)
-            Booth.objects.filter(id=booth_id).update(lantern_count=F("lantern_count") + 1)
+        try:
+            with transaction.atomic():
+                type(user).objects.select_for_update().get(pk=user.pk)
+
+                today_count = Lantern.objects.filter(user=user, festival_date=self._today).count()
+                if today_count >= 3:
+                    raise ApiError(
+                        code="DAILY_LIMIT_EXCEEDED",
+                        message="등불은 하루에 3개씩만 달 수 있어요.",
+                        status_code=status.HTTP_409_CONFLICT,
+                    )
+
+                lantern = Lantern.objects.create(
+                    user=user, festival_date=self._today, **validated_data
+                )
+                Booth.objects.filter(id=booth_id).update(lantern_count=F("lantern_count") + 1)
+        except IntegrityError as exc:
+            raise ApiError(
+                code="DUPLICATE_BOOTH_LANTERN",
+                message="부스 선택을 변경해주세요.",
+                status_code=status.HTTP_409_CONFLICT,
+            ) from exc
 
         return lantern
 
@@ -127,11 +146,18 @@ class LanternReportCreateSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        return LanternReport.objects.create(
-            lantern=self.context["lantern"],
-            user=self.context["request"].user,
-            **validated_data,
-        )
+        try:
+            return LanternReport.objects.create(
+                lantern=self.context["lantern"],
+                user=self.context["request"].user,
+                **validated_data,
+            )
+        except IntegrityError as exc:
+            raise ApiError(
+                code="ALREADY_REPORTED",
+                message="이미 신고한 등불입니다.",
+                status_code=status.HTTP_409_CONFLICT,
+            ) from exc
 
 
 class LanternListQuerySerializer(serializers.Serializer):
