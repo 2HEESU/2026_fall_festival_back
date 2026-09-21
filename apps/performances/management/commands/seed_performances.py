@@ -13,6 +13,7 @@ DAY_1_LINEUP = [
     (
         "음샘",
         "밴드동아리",
+        True,
         time(16, 0),
         60,
         [
@@ -24,6 +25,7 @@ DAY_1_LINEUP = [
     (
         "소리터",
         "풍물패",
+        True,
         time(17, 30),
         45,
         [
@@ -33,6 +35,7 @@ DAY_1_LINEUP = [
     (
         "초대가수 A",
         None,
+        False,
         time(19, 0),
         60,
         [],
@@ -43,6 +46,7 @@ DAY_2_LINEUP = [
     (
         "댄스동아리 하이킥",
         "중앙동아리",
+        True,
         time(16, 30),
         40,
         [
@@ -53,6 +57,7 @@ DAY_2_LINEUP = [
     (
         "어쿠스틱 소모임",
         "음악동아리",
+        True,
         time(18, 0),
         50,
         [
@@ -66,6 +71,7 @@ DAY_3_LINEUP = [
     (
         "졸업생 밴드",
         "동문",
+        True,
         time(17, 0),
         50,
         [
@@ -75,6 +81,7 @@ DAY_3_LINEUP = [
     (
         "초대가수 B",
         None,
+        False,
         time(19, 30),
         70,
         [],
@@ -129,6 +136,7 @@ class Command(BaseCommand):
             for (
                 team_name,
                 affiliation,
+                has_setlist,
                 start_time,
                 duration,
                 songs,
@@ -143,6 +151,7 @@ class Command(BaseCommand):
                 performance = Performance.objects.create(
                     team_name=team_name,
                     affiliation=affiliation,
+                    has_setlist=has_setlist,
                     description=f"{team_name} 공연입니다. (목업 데이터)",
                     festival_date=festival_date,
                     start_at=start_at,

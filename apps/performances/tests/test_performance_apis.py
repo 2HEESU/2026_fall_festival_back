@@ -147,6 +147,20 @@ class TestList:
 
         assert all(item["is_live"] is False for item in items)
 
+    def test_has_setlist_defaults_to_true(self, client):
+        make_performance()
+
+        item = client.get(LIST_URL, {"date": "2026-09-29"}).json()["data"]["performances"][0]
+
+        assert item["has_setlist"] is True
+
+    def test_has_setlist_false_for_celebrity_style_performance(self, client):
+        make_performance(has_setlist=False)
+
+        item = client.get(LIST_URL, {"date": "2026-09-29"}).json()["data"]["performances"][0]
+
+        assert item["has_setlist"] is False
+
 
 class TestDetail:
     def test_returns_songs_in_sort_order(self, client):
@@ -239,6 +253,13 @@ class TestDetail:
         response = client.get(f"{LIST_URL}{performance.pk}/")
 
         assert response.status_code == 404
+
+    def test_has_setlist_is_included_in_detail(self, client):
+        performance = make_performance(has_setlist=False)
+
+        data = client.get(f"{LIST_URL}{performance.pk}/").json()["data"]
+
+        assert data["has_setlist"] is False
 
 
 class TestNow:
@@ -393,6 +414,21 @@ class TestNow:
         items = client.get(NOW_URL).json()["data"]["performances"]
 
         assert items == []
+
+    def test_has_setlist_is_included_for_home_card(self, client):
+        now = timezone.localtime()
+
+        Performance.objects.create(
+            team_name="초대가수",
+            festival_date=DAY_1,
+            start_at=now - timedelta(minutes=10),
+            end_at=now + timedelta(minutes=50),
+            has_setlist=False,
+        )
+
+        item = client.get(NOW_URL).json()["data"]["performances"][0]
+
+        assert item["has_setlist"] is False
 
 
 class TestDefaultDate:
