@@ -146,7 +146,7 @@ class TestList:
         ).json()["data"]["performances"]
 
         assert all(item["is_live"] is False for item in items)
-        
+
     def test_has_setlist_defaults_to_true(self, client):
         make_performance()
 
@@ -253,14 +253,13 @@ class TestDetail:
         response = client.get(f"{LIST_URL}{performance.pk}/")
 
         assert response.status_code == 404
-        
+
     def test_has_setlist_is_included_in_detail(self, client):
         performance = make_performance(has_setlist=False)
 
         data = client.get(f"{LIST_URL}{performance.pk}/").json()["data"]
 
         assert data["has_setlist"] is False
-        
 
 
 class TestNow:
@@ -415,7 +414,7 @@ class TestNow:
         items = client.get(NOW_URL).json()["data"]["performances"]
 
         assert items == []
-        
+
     def test_has_setlist_is_included_for_home_card(self, client):
         now = timezone.localtime()
 
