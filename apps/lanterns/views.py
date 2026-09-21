@@ -129,10 +129,19 @@ class LanternViewSet(
         )
 
     def perform_destroy(self, instance):
+        now = timezone.now()
         with transaction.atomic():
-            instance.deleted_at = timezone.now()
-            instance.deleted_by = Lantern.DeletedBy.USER
-            instance.save(update_fields=["deleted_at", "deleted_by"])
+            updated_rows = Lantern.objects.filter(id=instance.id, deleted_at__isnull=True).update(
+                deleted_at=now, deleted_by=Lantern.DeletedBy.USER
+            )
+
+            if updated_rows == 0:
+                raise ApiError(
+                    code="ALREADY_DELETED",
+                    message="이미 삭제된 등불입니다.",
+                    status_code=status.HTTP_409_CONFLICT,
+                )
+
             Booth.objects.filter(id=instance.booth_id).update(lantern_count=F("lantern_count") - 1)
 
     @extend_schema(
