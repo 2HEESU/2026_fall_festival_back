@@ -9,4 +9,9 @@ def auth_headers(settings):
 
 @pytest.fixture
 def client():
-    return Client()
+    return Client(SERVER_NAME="admin.testserver")
+
+
+@pytest.fixture
+def subdomain_admin_client():
+    return Client(SERVER_NAME="admin.testserver")

@@ -9,7 +9,6 @@ from django.utils import timezone
 
 from apps.performances.models import Performance, Song
 
-
 DAY_1_LINEUP = [
     (
         "음샘",
