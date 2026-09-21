@@ -21,6 +21,9 @@ from .serializers import (
     to_admin_notice_detail,
     to_admin_notice_list_item,
 
+    NoticeRollingItemSerializer,
+    NoticeRollingListResponseSerializer,
+    
     NoticeDetailSerializer,
     NoticeListItemSerializer,
     NoticeListQuerySerializer,
@@ -260,4 +263,25 @@ class NoticeDetailView(UserNoticeAPIView):
             "NOTICE_DETAIL_SUCCESS",
             "공지 상세 조회에 성공했습니다.",
             to_user_notice_detail(notice),
+        )
+
+
+class NoticeRollingListView(APIView):
+    """홈 상단 롤링 공지 목록 조회 API (비로그인 사용자 가능)"""
+
+    @extend_schema(
+        tags=["Notice"],
+        summary="상단 롤링 공지 목록 조회",
+        description="홈 상단 롤링 바에 노출할 공지 3건을 긴급공지 우선, 최신순으로 조회합니다.",
+        responses={200: NoticeRollingListResponseSerializer},
+    )
+    def get(self, request):
+        notices = selectors.get_rolling_notices()
+        serializer = NoticeRollingItemSerializer(notices, many=True)
+
+        return success_response(
+            code="NOTICE_ROLLING_LIST_SUCCESS",
+            message="상단 롤링 공지 목록을 조회했습니다.",
+            data={"notices": serializer.data},
+            status=http_status.HTTP_200_OK,
         )
