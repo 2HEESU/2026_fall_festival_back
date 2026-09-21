@@ -222,7 +222,10 @@ class LanternViewSet(
         return success_response(
             "LANTERN_LIST_SUCCESS",
             "등불 목록을 조회했습니다.",
-            {**page.as_meta(), "items": [to_lantern_item(item) for item in page.items]},
+            {
+                **page.as_meta(),
+                "items": [to_lantern_item(item, request.user) for item in page.items],
+            },
         )
 
     def retrieve(self, request, *args, **kwargs):
@@ -251,7 +254,7 @@ class LanternViewSet(
         return success_response(
             "LANTERN_DETAIL_SUCCESS",
             "등불을 조회했습니다.",
-            to_lantern_item(lantern),
+            to_lantern_item(lantern, request.user),
         )
 
     @action(detail=True, methods=["post"], url_path="reports")
