@@ -327,8 +327,7 @@ class CouponUseView(APIView):
         # 기간 만료 (발급일 포함 COUPON_VALID_DAYS일 이내만 사용 가능)
         if (
             coupon.status == Coupon.Status.EXPIRED
-            or (timezone.localdate() - coupon.issued_date).days
-            >= COUPON_VALID_DAYS
+            or (timezone.localdate() - coupon.issued_date).days >= COUPON_VALID_DAYS
         ):
             return Response(
                 {
