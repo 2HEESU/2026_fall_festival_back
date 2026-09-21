@@ -35,6 +35,7 @@ def to_list_item(performance, *, is_live):
         "start_at": to_local_iso(performance.start_at),
         "end_at": to_local_iso(performance.end_at),
         "is_live": is_live,
+        "has_setlist": performance.has_setlist,
     }
 
 
@@ -49,6 +50,7 @@ def to_detail(performance):
         "festival_date": performance.festival_date,
         "start_at": to_local_iso(performance.start_at),
         "end_at": to_local_iso(performance.end_at),
+        "has_setlist": performance.has_setlist,
         "songs": [
             {
                 "song_id": song.pk,
@@ -69,6 +71,9 @@ class PerformanceListItemSerializer(serializers.Serializer):
     start_at = serializers.CharField(help_text="2026-09-29T16:00:00 (KST)")
     end_at = serializers.CharField(help_text="2026-09-29T17:00:00 (KST)")
     is_live = serializers.BooleanField()
+    has_setlist = serializers.BooleanField(
+        help_text="false면 연예인 공연 등 상세(셋리스트) 화면이 없는 공연"
+    )
 
 
 class PerformanceListDataSerializer(serializers.Serializer):
@@ -102,6 +107,7 @@ class PerformanceDetailDataSerializer(serializers.Serializer):
     festival_date = serializers.DateField()
     start_at = serializers.CharField(help_text="2026-09-29T16:00:00 (KST)")
     end_at = serializers.CharField(help_text="2026-09-29T17:00:00 (KST)")
+    has_setlist = serializers.BooleanField()
     songs = SongSerializer(many=True)
 
 
