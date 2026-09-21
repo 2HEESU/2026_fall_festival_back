@@ -2,7 +2,6 @@
 
 from datetime import timedelta
 
-
 # 공연 시작 전 미리보기 시간
 UPCOMING_PREVIEW_WINDOW = timedelta(hours=1)
 

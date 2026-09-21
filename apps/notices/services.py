@@ -33,15 +33,21 @@ def create_notice(
     type: str = Notice.Type.NORMAL,
     image_url: str | None = None,
     admin: Any = None,
+    admin_id: int | None = None,
 ) -> Notice:
     """새로운 공지사항을 생성합니다."""
-    return Notice.objects.create(
-        title=title,
-        content=content,
-        type=type,
-        image_url=image_url,
-        admin=admin,
-    )
+    create_kwargs = {
+        "title": title,
+        "content": content,
+        "type": type,
+        "image_url": image_url,
+    }
+    if admin is not None:
+        create_kwargs["admin"] = admin
+    elif admin_id is not None:
+        create_kwargs["admin_id"] = admin_id
+
+    return Notice.objects.create(**create_kwargs)
 
 
 @transaction.atomic
