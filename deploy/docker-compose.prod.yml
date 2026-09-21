@@ -5,7 +5,7 @@ services:
     container_name: dgufesta_redis
     restart: unless-stopped
     # 최대 메모리 512MB 제한 및 용량 초과 시 오래된 캐시부터 자동 삭제 정책
-    command: ["redis-server", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
     volumes:
       - redis_data:/data
     expose:
