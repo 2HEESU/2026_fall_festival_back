@@ -178,7 +178,7 @@ def _lantern_status(lantern):
     return "deleted_by_user"
 
 
-def to_lantern_item(lantern):
+def to_lantern_item(lantern, requesting_user=None):
     lantern_status = _lantern_status(lantern)
     return {
         "lantern_id": lantern.id,
@@ -186,7 +186,9 @@ def to_lantern_item(lantern):
         "nickname": lantern.nickname,
         "message": lantern.message if lantern_status == "active" else None,
         "status": lantern_status,
+        "is_mine": requesting_user is not None and lantern.user_id == requesting_user.id,
         "created_at": timezone.localtime(lantern.created_at).strftime("%Y-%m-%dT%H:%M:%S"),
+        "updated_at": timezone.localtime(lantern.updated_at).strftime("%Y-%m-%dT%H:%M:%S"),
     }
 
 
