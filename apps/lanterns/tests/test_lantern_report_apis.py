@@ -1,5 +1,7 @@
 """Lantern report API tests."""
 
+from types import SimpleNamespace
+
 import pytest
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -7,6 +9,8 @@ from rest_framework.test import APIClient
 from apps.accounts.models import User
 from apps.booths.models import Booth
 from apps.lanterns.models import Lantern, LanternReport
+from apps.lanterns.serializers import LanternReportCreateSerializer
+from common.exceptions import ApiError
 
 
 @pytest.fixture
@@ -79,3 +83,15 @@ class TestLanternReport:
     def test_report_requires_authentication(self, client, lantern):
         response = client.post(f"/api/lanterns/{lantern.id}/reports/", {"reason": "ABUSE"})
         assert response.status_code in (401, 403)
+
+    def test_create_handles_race_duplicate_report(self, user, lantern):
+        LanternReport.objects.create(lantern=lantern, user=user, reason="ABUSE")
+
+        serializer = LanternReportCreateSerializer(
+            context={"request": SimpleNamespace(user=user), "lantern": lantern}
+        )
+
+        with pytest.raises(ApiError) as exc_info:
+            serializer.create({"reason": "ETC"})
+
+        assert exc_info.value.code == "ALREADY_REPORTED"
