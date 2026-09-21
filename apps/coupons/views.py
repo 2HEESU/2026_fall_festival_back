@@ -22,6 +22,9 @@ from .serializers import (
     CouponUseSerializer,
 )
 
+# 당첨된 쿠폰을 발급일 포함 며칠까지 사용(수령) 가능한지 (이슈 #80)
+COUPON_VALID_DAYS = 3
+
 
 # 쿠폰 발급
 class CouponIssueView(APIView):
@@ -321,11 +324,11 @@ class CouponUseView(APIView):
                 status=status.HTTP_409_CONFLICT,
             )
 
-        # 기간 만료
+        # 기간 만료 (발급일 포함 COUPON_VALID_DAYS일 이내만 사용 가능)
         if (
             coupon.status == Coupon.Status.EXPIRED
-            or coupon.issued_date
-            != timezone.localdate()
+            or (timezone.localdate() - coupon.issued_date).days
+            >= COUPON_VALID_DAYS
         ):
             return Response(
                 {
