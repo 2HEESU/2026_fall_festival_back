@@ -70,10 +70,28 @@ class TestLanternCreate:
         assert body["data"]["nickname"] == "익명의 코끼리"
         assert body["data"]["message"] == "화이팅!"
         assert body["data"]["festival_date"] == "2026-09-29"
+        assert body["data"]["is_first_today"] is True
 
         booth.refresh_from_db()
         assert booth.lantern_count == 1
         assert Lantern.objects.filter(user=user, booth=booth).count() == 1
+
+    def test_create_marks_is_first_today_false_for_second_lantern(self, auth_client, user, booth):
+        Lantern.objects.create(
+            user=user, booth=booth, message="첫 등불", festival_date=FESTIVAL_DAY
+        )
+
+        other_booth = Booth.objects.create(
+            name="다른 부스", place_type=Booth.PlaceType.BOOTH, category=Booth.Category.ETC
+        )
+        with _patch_today():
+            response = auth_client.post(
+                "/api/lanterns/",
+                {"booth_id": other_booth.id, "message": "두번째!"},
+            )
+
+        assert response.status_code == 201
+        assert response.json()["data"]["is_first_today"] is False
 
     def test_create_with_nickname(self, auth_client, booth):
         with _patch_today():
