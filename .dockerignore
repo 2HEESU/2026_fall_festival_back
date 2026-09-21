@@ -1,0 +1,23 @@
+# 1. Git 및 설정 파일
+.git
+.github
+.gitignore
+
+# 2. ⚠️ 환경변수 및 비밀 파일 (도커 이미지 내부 복사 원천 차단)
+.env
+.env.*
+!.env.example
+
+# 3. 파이썬 가상환경 및 캐시 파일
+__pycache__
+*.py[cod]
+*$py.class
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# 4. 로컬 DB 및 정적/미디어 볼륨
+db.sqlite3
+media/
+staticfiles/
