@@ -7,10 +7,10 @@ on:
 
   workflow_dispatch:
 
-concurrency:
 permissions:
   contents: read
 
+concurrency:
   group: deploy-develop
   cancel-in-progress: false
 
