@@ -1,3 +1,4 @@
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -6,6 +7,7 @@ from rest_framework.test import APITestCase
 from apps.notices.models import Notice
 
 
+@override_settings(ROOT_URLCONF="apps.notices.public_urls")
 class UserNoticeAPITestCase(APITestCase):
     """일반 사용자 공지사항 API 테스트."""
 
@@ -101,11 +103,7 @@ class UserNoticeAPITestCase(APITestCase):
 
         # total 관련 키 검증 (total_count, total, total_elements 중 하나 일치 확인)
         meta = data["meta"]
-        total = (
-            meta.get("total_count")
-            or meta.get("total")
-            or meta.get("total_elements")
-        )
+        total = meta.get("total_count") or meta.get("total") or meta.get("total_elements")
         self.assertEqual(total, 3)
 
     # -------------------------------------------------------------
