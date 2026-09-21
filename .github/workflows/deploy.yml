@@ -8,6 +8,9 @@ on:
   workflow_dispatch:
 
 concurrency:
+permissions:
+  contents: read
+
   group: deploy-develop
   cancel-in-progress: false
 
