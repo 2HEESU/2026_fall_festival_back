@@ -3,15 +3,6 @@ from rest_framework import serializers
 from .models import Coupon
 
 
-# 쿠폰 발급 요청
-class CouponIssueSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Coupon
-        fields = [
-            "user",
-        ]
-
-
 # 나의 쿠폰 목록 조회 응답
 # 수령장소 안내는 프론트에서 하드코딩하므로 응답에 포함하지 않음
 class CouponListItemSerializer(serializers.ModelSerializer):
@@ -35,7 +26,6 @@ class CouponUseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Coupon
         fields = [
-            "user",
             "verify_code",
         ]
 

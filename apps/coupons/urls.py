@@ -4,8 +4,8 @@ from .views import (
     CouponIssueView,
     CouponListView,
     CouponScratchView,
-    CouponUseView,
     CouponStatsView,
+    CouponUseView,
 )
 
 urlpatterns = [
