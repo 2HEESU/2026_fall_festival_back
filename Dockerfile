@@ -15,7 +15,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # 4. 의존성 파일 복사 및 패키지 일괄 설치
-# (우리 프로젝트의 pyproject.toml 기반으로 설치)
 COPY pyproject.toml README.md /app/
 RUN pip install --upgrade pip \
     && pip install .
