@@ -94,8 +94,6 @@ class LanternCreateSerializer(ForbiddenWordValidationMixin, serializers.ModelSer
                 status_code=status.HTTP_409_CONFLICT,
             )
 
-        self._is_first_today = today_count == 0
-
         return attrs
 
     def create(self, validated_data):
@@ -113,6 +111,8 @@ class LanternCreateSerializer(ForbiddenWordValidationMixin, serializers.ModelSer
                         message="등불은 하루에 3개씩만 달 수 있어요.",
                         status_code=status.HTTP_409_CONFLICT,
                     )
+
+                self._is_first_today = today_count == 0
 
                 lantern = Lantern.objects.create(
                     user=user, festival_date=self._today, **validated_data
@@ -137,6 +137,25 @@ class LanternUpdateSerializer(ForbiddenWordValidationMixin, serializers.ModelSer
         model = Lantern
         fields = ["lantern_id", "nickname", "message", "updated_at"]
         read_only_fields = ["updated_at"]
+
+    def update(self, instance, validated_data):
+        now = timezone.now()
+        updated_rows = Lantern.objects.filter(id=instance.id, deleted_at__isnull=True).update(
+            updated_at=now, **validated_data
+        )
+
+        if updated_rows == 0:
+            raise ApiError(
+                code="ALREADY_DELETED",
+                message="이미 삭제된 등불입니다.",
+                status_code=status.HTTP_409_CONFLICT,
+            )
+
+        for field_name, value in validated_data.items():
+            setattr(instance, field_name, value)
+        instance.updated_at = now
+
+        return instance
 
 
 class LanternReportCreateSerializer(serializers.ModelSerializer):
