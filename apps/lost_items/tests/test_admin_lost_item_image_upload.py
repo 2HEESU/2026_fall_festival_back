@@ -11,7 +11,7 @@ from PIL import Image
 
 pytestmark = pytest.mark.django_db
 
-UPLOAD_URL = "/api/admin/lost-items/images/"
+UPLOAD_URL = "/api/lost-items/images/"
 
 
 @pytest.fixture(autouse=True)
@@ -48,8 +48,8 @@ def get_storage_path(image_url):
 
 
 class TestImageUpload:
-    def test_uploads_png(self, client, auth_headers):
-        response = client.post(
+    def test_uploads_png(self, subdomain_admin_client, auth_headers):
+        response = subdomain_admin_client.post(
             UPLOAD_URL,
             {"file": make_image()},
             **auth_headers,
@@ -64,7 +64,7 @@ class TestImageUpload:
 
     def test_uploads_jpeg_and_normalizes_extension_to_jpg(
         self,
-        client,
+        subdomain_admin_client,
         auth_headers,
     ):
         image = make_image(
@@ -72,7 +72,7 @@ class TestImageUpload:
             name="photo.jpeg",
         )
 
-        response = client.post(
+        response = subdomain_admin_client.post(
             UPLOAD_URL,
             {"file": image},
             **auth_headers,
@@ -81,13 +81,13 @@ class TestImageUpload:
         assert response.status_code == 201
         assert response.json()["data"]["image_url"].endswith(".jpg")
 
-    def test_uploads_webp(self, client, auth_headers):
+    def test_uploads_webp(self, subdomain_admin_client, auth_headers):
         image = make_image(
             fmt="WEBP",
             name="photo.webp",
         )
 
-        response = client.post(
+        response = subdomain_admin_client.post(
             UPLOAD_URL,
             {"file": image},
             **auth_headers,
@@ -96,8 +96,8 @@ class TestImageUpload:
         assert response.status_code == 201
         assert response.json()["data"]["image_url"].endswith(".webp")
 
-    def test_saved_file_exists(self, client, auth_headers):
-        response = client.post(
+    def test_saved_file_exists(self, subdomain_admin_client, auth_headers):
+        response = subdomain_admin_client.post(
             UPLOAD_URL,
             {"file": make_image()},
             **auth_headers,
@@ -108,15 +108,15 @@ class TestImageUpload:
 
         assert default_storage.exists(storage_path)
 
-    def test_filename_is_randomized(self, client, auth_headers):
+    def test_filename_is_randomized(self, subdomain_admin_client, auth_headers):
         """같은 파일명을 업로드해도 서로 다른 파일로 저장된다."""
 
-        first = client.post(
+        first = subdomain_admin_client.post(
             UPLOAD_URL,
             {"file": make_image()},
             **auth_headers,
         )
-        second = client.post(
+        second = subdomain_admin_client.post(
             UPLOAD_URL,
             {"file": make_image()},
             **auth_headers,
@@ -124,8 +124,8 @@ class TestImageUpload:
 
         assert first.json()["data"]["image_url"] != second.json()["data"]["image_url"]
 
-    def test_requires_auth(self, client):
-        response = client.post(
+    def test_requires_auth(self, subdomain_admin_client):
+        response = subdomain_admin_client.post(
             UPLOAD_URL,
             {"file": make_image()},
         )
@@ -133,8 +133,8 @@ class TestImageUpload:
         assert response.status_code == 401
         assert response.json()["code"] == "UNAUTHORIZED"
 
-    def test_missing_file_returns_400(self, client, auth_headers):
-        response = client.post(
+    def test_missing_file_returns_400(self, subdomain_admin_client, auth_headers):
+        response = subdomain_admin_client.post(
             UPLOAD_URL,
             {},
             **auth_headers,
@@ -146,7 +146,7 @@ class TestImageUpload:
 
     def test_unsupported_extension_returns_415(
         self,
-        client,
+        subdomain_admin_client,
         auth_headers,
     ):
         gif = SimpleUploadedFile(
@@ -155,7 +155,7 @@ class TestImageUpload:
             content_type="image/gif",
         )
 
-        response = client.post(
+        response = subdomain_admin_client.post(
             UPLOAD_URL,
             {"file": gif},
             **auth_headers,
@@ -166,7 +166,7 @@ class TestImageUpload:
 
     def test_renamed_non_image_returns_415(
         self,
-        client,
+        subdomain_admin_client,
         auth_headers,
     ):
         """확장자만 이미지로 변경한 파일은 거부한다."""
@@ -177,7 +177,7 @@ class TestImageUpload:
             content_type="image/png",
         )
 
-        response = client.post(
+        response = subdomain_admin_client.post(
             UPLOAD_URL,
             {"file": fake},
             **auth_headers,
@@ -188,7 +188,7 @@ class TestImageUpload:
 
     def test_extension_and_actual_format_mismatch_returns_415(
         self,
-        client,
+        subdomain_admin_client,
         auth_headers,
     ):
         """파일 확장자와 실제 이미지 포맷이 다르면 거부한다."""
@@ -198,7 +198,7 @@ class TestImageUpload:
             name="fake.png",
         )
 
-        response = client.post(
+        response = subdomain_admin_client.post(
             UPLOAD_URL,
             {"file": image},
             **auth_headers,
@@ -209,7 +209,7 @@ class TestImageUpload:
 
     def test_oversized_file_returns_413(
         self,
-        client,
+        subdomain_admin_client,
         auth_headers,
         settings,
     ):
@@ -219,7 +219,7 @@ class TestImageUpload:
 
         assert image.size > settings.LOST_ITEM_IMAGE_MAX_BYTES
 
-        response = client.post(
+        response = subdomain_admin_client.post(
             UPLOAD_URL,
             {"file": image},
             **auth_headers,
