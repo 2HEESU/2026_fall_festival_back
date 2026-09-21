@@ -10,6 +10,7 @@ urlpatterns = [
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("api/lost-items/", include("apps.lost_items.urls")),
     path("api/notices/", include("apps.notices.urls")),
+    path("api/lanterns/", include("apps.lanterns.admin_urls")),
 ]
 
 # 분실물 이미지 업로드가 admin 서브도메인에서 동작하고, 응답 image_url도
