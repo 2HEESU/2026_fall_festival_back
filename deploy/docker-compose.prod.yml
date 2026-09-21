@@ -1,0 +1,64 @@
+services:
+  # 1. Redis 캐시 컨테이너 (Look-aside 패턴 전용)
+  redis:
+    image: redis:7-alpine
+    container_name: dgufesta_redis
+    restart: unless-stopped
+    # 최대 메모리 512MB 제한 및 용량 초과 시 오래된 캐시부터 자동 삭제 정책
+    command: ["redis-server", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis_data:/data
+    expose:
+      - "6379"
+    networks:
+      - dgufesta_net
+
+  # 2. Django 백엔드 컨테이너 (Gunicorn gthread)
+  web:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: dgufesta-backend:latest
+    container_name: dgufesta_backend
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    expose:
+      - "8000"
+    depends_on:
+      - redis
+    networks:
+      - dgufesta_net
+
+  # 3. Nginx 웹서버 (리버스 프록시 및 정적 서빙)
+  nginx:
+    image: nginx:alpine
+    container_name: dgufesta_nginx
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:80:80"     # Cloudflare Tunnel 전용 로컬 바인딩 (외부 직접 침입 차단)
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      # React 프론트엔드 빌드 파일 마운트 (FE 팀 전달물 위치)
+      - ../frontend/dist/user:/usr/share/nginx/html/user
+      - ../frontend/dist/admin:/usr/share/nginx/html/admin
+    depends_on:
+      - web
+    networks:
+      - dgufesta_net
+
+# 공용 저장 공간(볼륨) 정의
+volumes:
+  static_volume:
+  media_volume:
+  redis_data:
+
+# 컨테이너 간 내부 격리 네트워크 정의
+networks:
+  dgufesta_net:
+    driver: bridge
