@@ -10,3 +10,9 @@ def auth_headers(settings):
 @pytest.fixture
 def client():
     return Client()
+
+
+@pytest.fixture
+def subdomain_admin_client():
+    """admin 서브도메인으로 라우팅되는 테스트 클라이언트."""
+    return Client(SERVER_NAME="admin.testserver")
