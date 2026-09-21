@@ -8,48 +8,37 @@ on:
   workflow_dispatch:
 
 concurrency:
+permissions:
+  contents: read
+
   group: deploy-develop
   cancel-in-progress: false
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
-      - name: EC2 서버 접속 및 최신 버전 배포
-        uses: appleboy/ssh-action@v1.2.5
+      - name: EC2 자동 배포
+        run: |
+          set -e
 
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          cd ~/2026_fall_festival_back
 
-          script: |
-            set -e
+          git fetch origin
+          git switch develop
+          git reset --hard origin/develop
 
-            # 1. 프로젝트 폴더로 이동
-            cd ~/2026_fall_festival_back
+          docker compose -f deploy/docker-compose.prod.yml build web
 
-            # 2. develop 최신 상태로 정확히 맞춤
-            git fetch origin
-            git switch -C develop origin/develop
+          docker compose -f deploy/docker-compose.prod.yml run --rm web \
+            python manage.py migrate --noinput
 
-            # 3. 새로운 Django 이미지 먼저 빌드
-            docker compose -f deploy/docker-compose.prod.yml build web
+          docker compose -f deploy/docker-compose.prod.yml run --rm web \
+            python manage.py collectstatic --noinput
 
-            # 4. DB 마이그레이션
-            docker compose -f deploy/docker-compose.prod.yml run --rm web \
-              python manage.py migrate --noinput
+          docker compose -f deploy/docker-compose.prod.yml up -d
 
-            # 5. 정적 파일 수집
-            docker compose -f deploy/docker-compose.prod.yml run --rm web \
-              python manage.py collectstatic --noinput
+          docker image prune -f
 
-            # 6. Redis + Django + Nginx 실행/갱신
-            docker compose -f deploy/docker-compose.prod.yml up -d
-
-            # 7. 사용하지 않는 Docker 이미지 정리
-            docker image prune -f
-
-            # 8. 배포 상태 확인
-            docker compose -f deploy/docker-compose.prod.yml ps
+          docker compose -f deploy/docker-compose.prod.yml ps
