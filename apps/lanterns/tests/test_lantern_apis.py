@@ -1,6 +1,7 @@
 """Lantern registration/update/delete API tests."""
 
 from datetime import date
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -10,6 +11,9 @@ from rest_framework.test import APIClient
 from apps.accounts.models import User
 from apps.booths.models import Booth
 from apps.lanterns.models import Lantern
+from apps.lanterns.serializers import LanternCreateSerializer
+from apps.lanterns.views import LanternViewSet
+from common.exceptions import ApiError
 
 FESTIVAL_DAY = date(2026, 9, 29)
 OUT_OF_FESTIVAL_DAY = date(2026, 9, 1)
@@ -219,6 +223,48 @@ class TestLanternCreate:
         assert response.status_code == 201
         assert response.json()["code"] == "LANTERN_CREATE_SUCCESS"
 
+    def test_create_handles_race_duplicate_booth(self, user, booth):
+        with _patch_today():
+            today = timezone.localdate()
+            Lantern.objects.create(user=user, booth=booth, message="선점", festival_date=today)
+
+            serializer = LanternCreateSerializer(context={"request": SimpleNamespace(user=user)})
+            serializer._today = today
+
+            with pytest.raises(ApiError) as exc_info:
+                serializer.create(
+                    {"booth_id": booth.id, "nickname": "익명의 코끼리", "message": "화이팅!"}
+                )
+
+        assert exc_info.value.code == "DUPLICATE_BOOTH_LANTERN"
+
+    def test_create_recheck_blocks_daily_limit_under_lock(self, user, db):
+        with _patch_today():
+            today = timezone.localdate()
+            for i in range(3):
+                b = Booth.objects.create(
+                    name=f"락테스트부스{i}",
+                    place_type=Booth.PlaceType.BOOTH,
+                    category=Booth.Category.ETC,
+                )
+                Lantern.objects.create(user=user, booth=b, message="등불", festival_date=today)
+
+            extra_booth = Booth.objects.create(
+                name="락테스트여분부스",
+                place_type=Booth.PlaceType.BOOTH,
+                category=Booth.Category.ETC,
+            )
+
+            serializer = LanternCreateSerializer(context={"request": SimpleNamespace(user=user)})
+            serializer._today = today
+
+            with pytest.raises(ApiError) as exc_info:
+                serializer.create(
+                    {"booth_id": extra_booth.id, "nickname": "익명의 코끼리", "message": "화이팅!"}
+                )
+
+        assert exc_info.value.code == "DAILY_LIMIT_EXCEEDED"
+
 
 @pytest.mark.django_db
 class TestLanternUpdate:
@@ -362,3 +408,21 @@ class TestLanternDelete:
         response = auth_client.delete(f"/api/lanterns/{lantern.id}/")
         assert response.status_code == 409
         assert response.json()["code"] == "ALREADY_DELETED"
+
+    def test_perform_destroy_is_idempotent_under_concurrent_calls(self, user, booth):
+        booth.lantern_count = 1
+        booth.save(update_fields=["lantern_count"])
+        lantern = Lantern.objects.create(
+            user=user, booth=booth, message="동시 삭제 테스트", festival_date=FESTIVAL_DAY
+        )
+
+        viewset = LanternViewSet()
+        viewset.perform_destroy(lantern)
+
+        with pytest.raises(ApiError) as exc_info:
+            viewset.perform_destroy(lantern)
+
+        assert exc_info.value.code == "ALREADY_DELETED"
+
+        booth.refresh_from_db()
+        assert booth.lantern_count == 0
