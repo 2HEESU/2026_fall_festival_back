@@ -36,11 +36,23 @@ class LanternCreateSerializer(ForbiddenWordValidationMixin, serializers.ModelSer
     booth_id = serializers.IntegerField()
     nickname = serializers.CharField(max_length=5, required=False, allow_blank=True)
     message = serializers.CharField(max_length=30)
+    is_first_today = serializers.SerializerMethodField()
 
     class Meta:
         model = Lantern
-        fields = ["lantern_id", "booth_id", "nickname", "message", "festival_date", "created_at"]
+        fields = [
+            "lantern_id",
+            "booth_id",
+            "nickname",
+            "message",
+            "festival_date",
+            "created_at",
+            "is_first_today",
+        ]
         read_only_fields = ["festival_date", "created_at"]
+
+    def get_is_first_today(self, obj):
+        return getattr(self, "_is_first_today", False)
 
     def validate(self, attrs):
         today = timezone.localdate()
@@ -81,6 +93,8 @@ class LanternCreateSerializer(ForbiddenWordValidationMixin, serializers.ModelSer
                 message="등불은 하루에 3개씩만 달 수 있어요.",
                 status_code=status.HTTP_409_CONFLICT,
             )
+
+        self._is_first_today = today_count == 0
 
         return attrs
 
