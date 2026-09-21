@@ -126,6 +126,28 @@ class TestLanternList:
         assert response.status_code == 400
         assert response.json()["code"] == "INVALID_REQUEST_PARAM"
 
+    def test_list_includes_booth_name(self, client, user, booth):
+        Lantern.objects.create(user=user, booth=booth, message="A", festival_date=FESTIVAL_DAY)
+
+        response = client.get("/api/lanterns/")
+        body = response.json()
+        assert body["data"]["items"][0]["booth_name"] == booth.name
+
+    def test_list_does_not_n_plus_one_query_booth(
+        self, client, user, booth, django_assert_num_queries
+    ):
+        other_booth = Booth.objects.create(
+            name="다른 부스", place_type=Booth.PlaceType.BOOTH, category=Booth.Category.ETC
+        )
+        Lantern.objects.create(user=user, booth=booth, message="A", festival_date=FESTIVAL_DAY)
+        Lantern.objects.create(
+            user=user, booth=other_booth, message="B", festival_date=FESTIVAL_DAY
+        )
+
+        with django_assert_num_queries(2):
+            response = client.get("/api/lanterns/")
+        assert response.status_code == 200
+
     def test_list_pagination(self, client, user, booth):
         for i in range(5):
             Lantern.objects.create(
@@ -156,6 +178,14 @@ class TestLanternDetail:
         assert body["code"] == "LANTERN_DETAIL_SUCCESS"
         assert body["data"]["lantern_id"] == lantern.id
         assert body["data"]["status"] == "active"
+
+    def test_detail_includes_booth_name(self, client, user, booth):
+        lantern = Lantern.objects.create(
+            user=user, booth=booth, message="화이팅", festival_date=FESTIVAL_DAY
+        )
+        response = client.get(f"/api/lanterns/{lantern.id}/")
+        body = response.json()
+        assert body["data"]["booth_name"] == booth.name
 
     def test_detail_rejects_missing_lantern(self, client):
         response = client.get("/api/lanterns/999999/")

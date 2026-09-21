@@ -157,6 +157,7 @@ def to_lantern_item(lantern):
     return {
         "lantern_id": lantern.id,
         "booth_id": lantern.booth_id,
+        "booth_name": lantern.booth.name,
         "nickname": lantern.nickname,
         "message": lantern.message if lantern_status == "active" else None,
         "status": lantern_status,
