@@ -99,6 +99,8 @@ class NoticeRollingListViewTestCase(APITestCase):
 
     def test_get_rolling_notices_soft_deleted_excluded(self):
         """4. 소프트 삭제(Soft Delete)된 공지는 노출 목록에서 제외되는지 테스트"""
+        now = timezone.now()
+
         # 정상 공지 1건 생성
         active_notice = Notice.objects.create(
             title="정상 공지",
@@ -106,14 +108,15 @@ class NoticeRollingListViewTestCase(APITestCase):
             type=Notice.Type.NORMAL,
         )
 
-        # 삭제 대상 공지 1건 생성 후 삭제 처리
+        # 삭제 대상 공지 생성 후 deleted_at 설정 (Soft Delete 상태 만들기)
         deleted_notice = Notice.objects.create(
             title="삭제된 긴급 공지",
             content="내용",
             type=Notice.Type.URGENT,
         )
-        # SoftDeleteModel의 delete() 메서드 호출
-        deleted_notice.delete()
+        # delete() 대신 deleted_at 설정 후 저장 (혹은 deleted_at 필드 update)
+        deleted_notice.deleted_at = now
+        deleted_notice.save(update_fields=["deleted_at"])
 
         response = self.client.get(self.url)
 

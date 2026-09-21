@@ -256,6 +256,14 @@ class NoticeRollingItemSerializer(serializers.ModelSerializer):
         fields = ["notice_id", "type", "title", "created_at"]
 
 
-class NoticeRollingListResponseSerializer(serializers.Serializer):
-    """Swagger 문서화용 응답 래퍼 Serializer"""
+class NoticeRollingListDataSerializer(serializers.Serializer):
+    """공통 응답 data 내부 래퍼 Serializer"""
     notices = NoticeRollingItemSerializer(many=True)
+
+
+class NoticeRollingListResponseSerializer(serializers.Serializer):
+    """Swagger 문서용 공통 응답 포맷 Serializer"""
+    success = serializers.BooleanField(default=True)
+    code = serializers.CharField(default="NOTICE_ROLLING_LIST_SUCCESS")
+    message = serializers.CharField(default="상단 롤링 공지 목록을 조회했습니다.")
+    data = NoticeRollingListDataSerializer()
