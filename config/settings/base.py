@@ -11,6 +11,7 @@ env = environ.Env(
     DJANGO_DEBUG=(bool, False),
     DJANGO_ALLOWED_HOSTS=(list, []),
     CORS_ALLOWED_ORIGINS=(list, []),
+    ADMIN_HOSTS=(list, ["admin.localhost"]),
 )
 environ.Env.read_env(BASE_DIR / ".env")
 
@@ -20,6 +21,10 @@ KAKAO_CLIENT_SECRET = env("KAKAO_CLIENT_SECRET", default="")
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="unsafe-scaffold-only-secret-key")
 DEBUG = env.bool("DJANGO_DEBUG")
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
+
+# 관리자 API를 서브도메인으로 분리하기 위한 호스트 목록 (SubdomainURLRoutingMiddleware).
+# ALLOWED_HOSTS에도 반드시 포함되어야 합니다.
+ADMIN_HOSTS = env.list("ADMIN_HOSTS")
 
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
@@ -41,6 +46,7 @@ AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "config.middleware.SubdomainURLRoutingMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
