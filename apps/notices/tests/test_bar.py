@@ -1,4 +1,5 @@
 from datetime import timedelta
+
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -26,7 +27,7 @@ class NoticeRollingListViewTestCase(APITestCase):
         self.assertEqual(response.data["data"]["notices"], [])
 
     def test_get_rolling_notices_priority_and_ordering(self):
-        """2. 긴급 공지(URGENT)가 일반 공지(NORMAL)보다 우선 정렬되고, 최신순으로 정렬되는지 테스트"""
+        """2. 긴급 공지(URGENT)가 일반 공지보다 우선 정렬되고 최신순 정렬되는지 테스트"""
         now = timezone.now()
 
         # 과거에 작성된 긴급 공지
@@ -78,8 +79,8 @@ class NoticeRollingListViewTestCase(APITestCase):
         # 총 5개의 일반 공지 생성
         for i in range(5):
             notice = Notice.objects.create(
-                title=f"일반 공지 {i+1}",
-                content=f"내용 {i+1}",
+                title=f"일반 공지 {i + 1}",
+                content=f"내용 {i + 1}",
                 type=Notice.Type.NORMAL,
             )
             Notice.objects.filter(id=notice.id).update(created_at=now + timedelta(minutes=i))
@@ -88,7 +89,7 @@ class NoticeRollingListViewTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         notices = response.data["data"]["notices"]
-        
+
         # 최대 3건 반환 확인
         self.assertEqual(len(notices), 3)
 
