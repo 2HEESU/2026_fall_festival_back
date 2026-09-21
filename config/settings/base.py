@@ -88,6 +88,19 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "2026 Fall Festival API",
     "DESCRIPTION": "Dongguk University 2026 fall festival backend API",
     "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "APPEND_COMPONENTS": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "관리자 토큰 또는 사용자 JWT 토큰",
+            }
+        }
+    },
+    "SECURITY": [{"BearerAuth": []}],
 }
 
 ADMIN_API_TOKEN = env("ADMIN_API_TOKEN", default="")

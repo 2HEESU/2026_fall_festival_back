@@ -56,9 +56,7 @@ def test_coupon_issue(api_client, users):
     assert coupon.daily_sequence == 1
     assert coupon.issued_date == timezone.localdate()
 
-    counter = DailyCouponCounter.objects.get(
-        date=timezone.localdate()
-    )
+    counter = DailyCouponCounter.objects.get(date=timezone.localdate())
 
     assert counter.count == 1
 
@@ -121,9 +119,7 @@ def test_daily_sequence_increases(api_client, users):
     assert response1.json()["daily_sequence"] == 1
     assert response2.json()["daily_sequence"] == 2
 
-    counter = DailyCouponCounter.objects.get(
-        date=timezone.localdate()
-    )
+    counter = DailyCouponCounter.objects.get(date=timezone.localdate())
 
     assert counter.count == 2
 
@@ -285,9 +281,7 @@ def test_coupon_stats(api_client, users):
     )
 
     # 통계 조회
-    response = api_client.get(
-        reverse("coupon-stats")
-    )
+    response = api_client.get(reverse("coupon-stats"))
 
     assert response.status_code == status.HTTP_200_OK
 

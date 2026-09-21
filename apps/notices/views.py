@@ -10,6 +10,7 @@ from common.exceptions import InvalidImageFile, InvalidInput, NotFound, custom_e
 from common.pagination import paginate
 from common.permissions import IsAdmin
 from common.responses import success_response
+from common.schema import ErrorResponseSerializer
 
 from . import selectors, services
 from .serializers import (
@@ -56,7 +57,11 @@ class AdminNoticeListView(AdminNoticeAPIView):
         ),
         operation_id="admin_notice_list",
         parameters=[AdminNoticeListQuerySerializer],
-        responses={200: AdminNoticeListResponseSerializer},
+        responses={
+            200: AdminNoticeListResponseSerializer,
+            400: ErrorResponseSerializer,
+            401: ErrorResponseSerializer,
+        },
     )
     def get(self, request):
         query_serializer = AdminNoticeListQuerySerializer(data=request.query_params)
@@ -86,7 +91,11 @@ class AdminNoticeListView(AdminNoticeAPIView):
         description="새로운 공지사항을 등록합니다. 제목과 본문은 필수이며 이미지는 선택입니다.",
         operation_id="admin_notice_create",
         request=AdminNoticeCreateSerializer,
-        responses={201: AdminNoticeCreateResponseSerializer},
+        responses={
+            201: AdminNoticeCreateResponseSerializer,
+            400: ErrorResponseSerializer,
+            401: ErrorResponseSerializer,
+        },
     )
     def post(self, request):
         serializer = AdminNoticeCreateSerializer(data=request.data)
@@ -99,6 +108,7 @@ class AdminNoticeListView(AdminNoticeAPIView):
             type=serializer.validated_data.get("type", "NORMAL"),
             image_url=serializer.validated_data.get("image_url"),
             admin=getattr(request, "admin", None),
+            admin_id=getattr(request, "admin_id", None),
         )
 
         return success_response(
@@ -117,7 +127,11 @@ class AdminNoticeDetailView(AdminNoticeAPIView):
         summary="관리자 공지 상세 조회",
         description="특정 공지사항의 상세 정보(제목, 본문, 유형, 이미지 등)를 조회합니다.",
         operation_id="admin_notice_detail",
-        responses={200: AdminNoticeDetailResponseSerializer},
+        responses={
+            200: AdminNoticeDetailResponseSerializer,
+            401: ErrorResponseSerializer,
+            404: ErrorResponseSerializer,
+        },
     )
     def get(self, request, notice_id: int):
         notice = selectors.get_notice_by_id(notice_id=notice_id)
@@ -136,7 +150,12 @@ class AdminNoticeDetailView(AdminNoticeAPIView):
         description="기존 공지사항의 제목, 본문, 유형, 이미지를 수정합니다.",
         operation_id="admin_notice_update",
         request=AdminNoticeUpdateSerializer,
-        responses={200: AdminNoticeUpdateResponseSerializer},
+        responses={
+            200: AdminNoticeUpdateResponseSerializer,
+            400: ErrorResponseSerializer,
+            401: ErrorResponseSerializer,
+            404: ErrorResponseSerializer,
+        },
     )
     def put(self, request, notice_id: int):
         notice = selectors.get_notice_by_id(notice_id=notice_id)
@@ -166,7 +185,11 @@ class AdminNoticeDetailView(AdminNoticeAPIView):
         summary="관리자 공지 삭제 (Soft Delete)",
         description="공지사항을 논리 삭제(Soft Delete) 처리합니다.",
         operation_id="admin_notice_delete",
-        responses={200: AdminNoticeDeleteResponseSerializer},
+        responses={
+            200: AdminNoticeDeleteResponseSerializer,
+            401: ErrorResponseSerializer,
+            404: ErrorResponseSerializer,
+        },
     )
     def delete(self, request, notice_id: int):
         notice = selectors.get_notice_by_id(notice_id=notice_id)
@@ -195,7 +218,12 @@ class AdminNoticeImageUploadView(AdminNoticeAPIView):
         ),
         operation_id="admin_notice_image_upload",
         request=AdminNoticeImageUploadSerializer,
-        responses={201: AdminNoticeImageUploadResponseSerializer},
+        responses={
+            201: AdminNoticeImageUploadResponseSerializer,
+            400: ErrorResponseSerializer,
+            401: ErrorResponseSerializer,
+            413: ErrorResponseSerializer,
+        },
     )
     def post(self, request):
         serializer = AdminNoticeImageUploadSerializer(data=request.data)
@@ -232,8 +260,12 @@ class NoticeListView(UserNoticeAPIView):
         summary="일반 사용자 공지사항 목록 조회",
         description="삭제되지 않은 공지사항 목록을 조회합니다.",
         operation_id="user_notice_list",
+        auth=[],
         parameters=[NoticeListQuerySerializer],
-        responses={200: UserNoticeListResponseSerializer},
+        responses={
+            200: UserNoticeListResponseSerializer,
+            400: ErrorResponseSerializer,
+        },
     )
     def get(self, request):
         query_serializer = NoticeListQuerySerializer(data=request.query_params)
@@ -266,7 +298,11 @@ class NoticeDetailView(UserNoticeAPIView):
         summary="일반 사용자 공지사항 상세 조회",
         description="특정 공지사항의 상세 내용을 조회합니다.",
         operation_id="user_notice_detail",
-        responses={200: UserNoticeDetailResponseSerializer},
+        auth=[],
+        responses={
+            200: UserNoticeDetailResponseSerializer,
+            404: ErrorResponseSerializer,
+        },
     )
     def get(self, request, notice_id: int):
         notice = selectors.get_notice_by_id(notice_id=notice_id)
@@ -288,6 +324,7 @@ class NoticeRollingListView(APIView):
         summary="상단 롤링 공지 목록 조회",
         description="홈 상단 롤링 바에 노출할 공지 3건을 긴급공지 우선, 최신순으로 조회합니다.",
         operation_id="user_notice_rolling_list",
+        auth=[],
         responses={200: NoticeRollingListResponseSerializer},
     )
     def get(self, request):
