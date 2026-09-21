@@ -14,6 +14,9 @@ class Performance(SoftDeleteModel):
     description = models.TextField(null=True, blank=True)
     image_url = models.URLField(max_length=500, null=True, blank=True)
 
+    # 동아리 공연만 셋리스트/상세 화면 제공.
+    # songs 개수로는 공연 유형을 구분할 수 없어 별도 필드로 관리한다.
+    has_setlist = models.BooleanField(default=True)
     # festival_date를 start_at에서 계산하지 않고 따로 두는 이유는, 자정을 넘겨
     # 끝나는 공연(23:30~00:30)도 "29일 공연"으로 묶여야 하기 때문이다.
     festival_date = models.DateField()
