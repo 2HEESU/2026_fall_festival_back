@@ -19,11 +19,11 @@ def lantern_list_queryset(*, user, mine, booth_id=None, festival_date=None):
     if festival_date is not None:
         queryset = queryset.filter(festival_date=festival_date)
 
-    return queryset.order_by("-created_at")
+    return queryset.select_related("booth").order_by("-created_at")
 
 
 def get_lantern(lantern_id):
-    return Lantern.objects.filter(pk=lantern_id).first()
+    return Lantern.objects.select_related("booth").filter(pk=lantern_id).first()
 
 
 # --- Admin Selectors ---
