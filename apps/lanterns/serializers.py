@@ -193,6 +193,13 @@ class LanternReportCreateSerializer(serializers.ModelSerializer):
             ) from exc
 
 
+class LanternReportResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(required=True, help_text="성공 여부 (True)")
+    code = serializers.CharField(required=True, help_text="응답 코드 (LANTERN_REPORT_SUCCESS)")
+    message = serializers.CharField(required=True, help_text="응답 메시지 (신고가 접수되었습니다.)")
+    data = LanternReportCreateSerializer(required=True, help_text="신고 접수 결과")
+
+
 class LanternListQuerySerializer(serializers.Serializer):
     mine = serializers.BooleanField(required=False, default=False)
     booth_id = serializers.IntegerField(required=False)
@@ -226,6 +233,69 @@ def to_lantern_item(lantern, requesting_user=None):
     }
 
 
+class UserLanternItemSerializer(serializers.Serializer):
+    lantern_id = serializers.IntegerField(required=True, help_text="등불 고유 ID")
+    booth_id = serializers.IntegerField(required=True, help_text="부스 ID")
+    booth_name = serializers.CharField(required=True, help_text="부스 이름")
+    nickname = serializers.CharField(required=True, help_text="작성자 닉네임")
+    message = serializers.CharField(
+        required=True, allow_null=True, help_text="응원 메시지 (삭제 시 null)"
+    )
+    status = serializers.CharField(
+        required=True, help_text="상태 (active, deleted_by_user, deleted_by_admin)"
+    )
+    is_mine = serializers.BooleanField(required=True, help_text="본인 작성 여부")
+    created_at = serializers.CharField(required=True, help_text="생성 일시 (ISO 형식)")
+    updated_at = serializers.CharField(required=True, help_text="수정 일시 (ISO 형식)")
+
+
+class UserLanternListDataSerializer(serializers.Serializer):
+    total_count = serializers.IntegerField(required=True, help_text="전체 등불 수")
+    page = serializers.IntegerField(required=True, help_text="현재 페이지 번호")
+    size = serializers.IntegerField(required=True, help_text="페이지 크기")
+    has_next = serializers.BooleanField(required=True, help_text="다음 페이지 존재 여부")
+    items = UserLanternItemSerializer(many=True, required=True, help_text="등불 목록")
+
+
+class UserLanternListResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(required=True, help_text="성공 여부 (True)")
+    code = serializers.CharField(required=True, help_text="응답 코드 (LANTERN_LIST_SUCCESS)")
+    message = serializers.CharField(
+        required=True, help_text="응답 메시지 (등불 목록을 조회했습니다.)"
+    )
+    data = UserLanternListDataSerializer(required=True, help_text="응답 데이터")
+
+
+class UserLanternDetailResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(required=True, help_text="성공 여부 (True)")
+    code = serializers.CharField(required=True, help_text="응답 코드 (LANTERN_DETAIL_SUCCESS)")
+    message = serializers.CharField(required=True, help_text="응답 메시지 (등불을 조회했습니다.)")
+    data = UserLanternItemSerializer(required=True, help_text="등불 상세 데이터")
+
+
+class LanternCreateResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(required=True, help_text="성공 여부 (True)")
+    code = serializers.CharField(required=True, help_text="응답 코드 (LANTERN_CREATE_SUCCESS)")
+    message = serializers.CharField(
+        required=True, help_text="응답 메시지 (등불을 성공적으로 남겼어요!)"
+    )
+    data = LanternCreateSerializer(required=True, help_text="등록된 등불 데이터")
+
+
+class LanternUpdateResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(required=True, help_text="성공 여부 (True)")
+    code = serializers.CharField(required=True, help_text="응답 코드 (LANTERN_UPDATE_SUCCESS)")
+    message = serializers.CharField(required=True, help_text="응답 메시지 (등불이 수정되었습니다.)")
+    data = LanternUpdateSerializer(required=True, help_text="수정된 등불 데이터")
+
+
+class LanternDeleteResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField(required=True, help_text="성공 여부 (True)")
+    code = serializers.CharField(required=True, help_text="응답 코드 (LANTERN_DELETE_SUCCESS)")
+    message = serializers.CharField(required=True, help_text="응답 메시지 (등불이 삭제되었습니다.)")
+    data = serializers.JSONField(required=True, allow_null=True, help_text="응답 데이터 (null)")
+
+
 # --- Admin Serializers ---
 class AdminLanternListQuerySerializer(serializers.Serializer):
     """관리자 등불 목록 조회 쿼리 파라미터."""
@@ -251,29 +321,75 @@ class AdminLanternListQuerySerializer(serializers.Serializer):
     )
 
 
+class AdminLanternPageMetaSerializer(serializers.Serializer):
+    """관리자 등불 목록 페이지네이션 메타데이터 스키마."""
+
+    total_count = serializers.IntegerField(required=True, help_text="전체 아이템 수")
+    page = serializers.IntegerField(required=True, help_text="현재 페이지 번호")
+    size = serializers.IntegerField(required=True, help_text="페이지 당 아이템 수")
+    has_next = serializers.BooleanField(required=True, help_text="다음 페이지 존재 여부")
+
+
 class AdminLanternListItemSerializer(serializers.Serializer):
     """관리자 등불 목록 항목 스키마."""
 
-    id = serializers.IntegerField()
-    nickname = serializers.CharField()
-    message = serializers.CharField()
-    booth_name = serializers.CharField()
-    report_count = serializers.IntegerField()
-    top_report_reason = serializers.CharField(allow_null=True)
-    created_at = serializers.DateTimeField()
+    id = serializers.IntegerField(required=True, help_text="등불 고유 ID")
+    nickname = serializers.CharField(required=True, help_text="작성자 닉네임")
+    message = serializers.CharField(required=True, help_text="등불 응원 메시지")
+    booth_name = serializers.CharField(required=True, help_text="연관 부스 이름")
+    report_count = serializers.IntegerField(required=True, help_text="신고 접수 누적 횟수")
+    top_report_reason = serializers.CharField(
+        required=True, allow_null=True, help_text="최다 신고 사유 (신고 없을 시 null)"
+    )
+    created_at = serializers.DateTimeField(required=True, help_text="등불 등록 일시")
+
+
+class AdminLanternListDataSerializer(serializers.Serializer):
+    """관리자 등불 목록 데이터 스키마."""
+
+    items = AdminLanternListItemSerializer(many=True, required=True, help_text="등불 목록")
+    meta = AdminLanternPageMetaSerializer(required=True, help_text="페이지네이션 메타데이터")
+
+
+class AdminLanternListResponseSerializer(serializers.Serializer):
+    """관리자 등불 목록 조회 응답 스키마."""
+
+    success = serializers.BooleanField(required=True, help_text="성공 여부 (True)")
+    code = serializers.CharField(required=True, help_text="응답 코드 (ADMIN_LANTERN_LIST_SUCCESS)")
+    message = serializers.CharField(
+        required=True, help_text="응답 메시지 (관리자 등불 목록 조회에 성공했습니다.)"
+    )
+    data = AdminLanternListDataSerializer(required=True, help_text="응답 데이터")
 
 
 class AdminLanternDetailSerializer(serializers.Serializer):
     """관리자 등불 신고 확인 모달 상세 스키마."""
 
-    id = serializers.IntegerField()
-    nickname = serializers.CharField()
-    message = serializers.CharField()
-    booth_name = serializers.CharField()
-    booth_department = serializers.CharField(allow_null=True)
-    report_count = serializers.IntegerField()
-    top_report_reason = serializers.CharField(allow_null=True)
-    created_at = serializers.DateTimeField()
+    id = serializers.IntegerField(required=True, help_text="등불 고유 ID")
+    nickname = serializers.CharField(required=True, help_text="작성자 닉네임")
+    message = serializers.CharField(required=True, help_text="등불 응원 메시지")
+    booth_name = serializers.CharField(required=True, help_text="연관 부스 이름")
+    booth_department = serializers.CharField(
+        required=True, allow_null=True, help_text="부스 소속/학과"
+    )
+    report_count = serializers.IntegerField(required=True, help_text="신고 접수 누적 횟수")
+    top_report_reason = serializers.CharField(
+        required=True, allow_null=True, help_text="최다 신고 사유 (신고 없을 시 null)"
+    )
+    created_at = serializers.DateTimeField(required=True, help_text="등불 등록 일시")
+
+
+class AdminLanternDetailResponseSerializer(serializers.Serializer):
+    """관리자 등불 상세 조회 응답 스키마."""
+
+    success = serializers.BooleanField(required=True, help_text="성공 여부 (True)")
+    code = serializers.CharField(
+        required=True, help_text="응답 코드 (ADMIN_LANTERN_DETAIL_SUCCESS)"
+    )
+    message = serializers.CharField(
+        required=True, help_text="응답 메시지 (관리자 등불 신고 상세 조회에 성공했습니다.)"
+    )
+    data = AdminLanternDetailSerializer(required=True, help_text="등불 상세 데이터")
 
 
 def to_admin_lantern_list_item(lantern: Lantern, top_reason: str | None = None) -> dict:
