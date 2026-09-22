@@ -27,6 +27,7 @@ def search_booths(db):
         name="멋사 주점",
         place_type=Booth.PlaceType.BOOTH,
         category=Booth.Category.ETC,
+        booth_size=Booth.BoothSize.BIG,
     )
     by_description = Booth.objects.create(
         name="가나다 부스",
@@ -84,6 +85,8 @@ def test_search_orders_exact_then_partial_then_others(client, search_booths):
     assert names == ["멋사", "멋사 주점", "가나다 부스", "라면 부스"]
     assert body["data"]["total_count"] == 4
     assert body["data"]["booths"][0]["has_my_lantern"] is False
+    partial_item = next(item for item in body["data"]["booths"] if item["name"] == "멋사 주점")
+    assert partial_item["booth_size"] == "BIG"
 
 
 @pytest.mark.django_db
