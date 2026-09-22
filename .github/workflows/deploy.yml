@@ -11,23 +11,30 @@ permissions:
   contents: read
 
 concurrency:
-  group: deploy-develop
+  group: deploy-backend
   cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: self-hosted
 
+    env:
+      DEPLOY_BRANCH: ${{ github.ref_name }}
+
     steps:
       - name: EC2 자동 배포
+        shell: bash
         run: |
-          set -e
+          set -euo pipefail
 
-          cd ~/2026_fall_festival_back
+          BACK_DIR=/home/ubuntu/2026_fall_festival_back
+
+          echo "배포 브랜치: $DEPLOY_BRANCH"
+
+          cd "$BACK_DIR"
 
           git fetch origin
-          git switch develop
-          git reset --hard origin/develop
+          git switch -C "$DEPLOY_BRANCH" "origin/$DEPLOY_BRANCH"
 
           docker compose -f deploy/docker-compose.prod.yml build web
 
