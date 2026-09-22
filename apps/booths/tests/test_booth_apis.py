@@ -24,12 +24,14 @@ def booths(db):
         subtitle="사회과학대학 광고홍보학과",
         place_type=Booth.PlaceType.BOOTH,
         category=Booth.Category.ETC,
+        booth_size=Booth.BoothSize.BIG,
         lantern_count=32,
     )
     normal = Booth.objects.create(
         name="가나다 부스",
         place_type=Booth.PlaceType.BOOTH,
         category=Booth.Category.ETC,
+        booth_size=Booth.BoothSize.SMALL,
         lantern_count=5,
     )
     collab = Booth.objects.create(
@@ -104,6 +106,10 @@ def test_booth_list_orders_by_name(client, booths):
     assert first["has_my_lantern"] is False
     assert first["operation"] == {"open_at": "17:30", "close_at": "22:00"}
 
+    sizes = {item["name"]: item["booth_size"] for item in items}
+    assert sizes["가나다 부스"] == "SMALL"
+    assert sizes["멋쟁이사자처럼 주점"] == "BIG"
+
 
 @pytest.mark.django_db
 def test_booth_chip_groups_collab_first_in_name_order(client, booths):
@@ -123,6 +129,7 @@ def test_booth_list_filters_by_category(client, booths):
     items = response.json()["data"]["booths"]
     assert [item["name"] for item in items] == ["명진관 화장실"]
     assert items[0]["directions"] == "명진관 1층 동쪽 출입구에서 50m 직진"
+    assert items[0]["booth_size"] is None
 
 
 @pytest.mark.django_db
@@ -165,6 +172,7 @@ def test_booth_detail_includes_operations_and_menus(client, booths):
     assert data["has_my_lantern"] is False
     assert len(data["operations"]) == 1
     assert [menu["name"] for menu in data["menus"]] == ["제육볶음", "소주"]
+    assert data["booth_size"] == "BIG"
 
 
 @pytest.mark.django_db

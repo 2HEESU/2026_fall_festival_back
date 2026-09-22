@@ -15,10 +15,20 @@ class Booth(models.Model):
         ECO = "ECO", "동빛에코"
         ETC = "ETC", "부스"
 
+    class BoothSize(models.TextChoices):
+        SMALL = "SMALL", "작은 천막"
+        BIG = "BIG", "큰 천막"
+
     name = models.CharField(max_length=100)
     subtitle = models.CharField(max_length=100, null=True, blank=True)
     place_type = models.CharField(max_length=20, choices=PlaceType.choices)
     category = models.CharField(max_length=20, choices=Category.choices)
+    booth_size = models.CharField(
+        max_length=10,
+        choices=BoothSize.choices,
+        null=True,
+        blank=True,
+    )
     description = models.TextField(null=True, blank=True)
     zone = models.CharField(max_length=30, null=True, blank=True)
     location_detail = models.CharField(max_length=100, null=True, blank=True)
