@@ -47,8 +47,9 @@ services:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
 
-      # 사용자 React 빌드 결과물
-      - /home/ubuntu/2026_fall_festival_front/dist:/usr/share/nginx/html/user:ro
+      # 사용자·관리자 React 빌드 결과물
+      - /home/ubuntu/2026_fall_festival_front/dist/user:/usr/share/nginx/html/user:ro
+      - /home/ubuntu/2026_fall_festival_front/dist/admin:/usr/share/nginx/html/admin:ro
 
     depends_on:
       - web
