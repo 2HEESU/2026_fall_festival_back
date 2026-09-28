@@ -12,3 +12,7 @@ DAY_NIGHT_BOUNDARY = time(16, 30)
 CATEGORY_CHIPS = ["BOOTH", "TOILET", "ALCOHOL", "ECO"]
 BOOTH_CHIP = "BOOTH"
 BOOTH_CHIP_CATEGORIES = ["COLLAB", "ETC"]
+
+# 다회용기 부스는 협업(COLLAB)으로 분류했지만 '동빛에코' 칩에도 계속 보여야 한다.
+# category가 한 칸이라 이름으로 예외를 둔다 (부스 이름이 바뀌면 여기도 고칠 것).
+ECO_CHIP_EXTRA_BOOTH_NAMES = ["다회용기 부스 (혜화관)", "다회용기 부스 (팔정도)"]

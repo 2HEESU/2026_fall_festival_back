@@ -19,7 +19,7 @@ from django.db.models.functions import Coalesce
 
 from apps.lanterns.models import Lantern
 
-from .constants import BOOTH_CHIP
+from .constants import BOOTH_CHIP, ECO_CHIP_EXTRA_BOOTH_NAMES
 from .models import Booth, BoothMenu, BoothOperation
 
 
@@ -107,7 +107,9 @@ def booth_operations_on(festival_date, time_slot, category=None, user=None):
             booth__category=Booth.Category.TOILET,
         )
     elif category == Booth.Category.ECO:
-        queryset = queryset.filter(booth__category=Booth.Category.ECO)
+        queryset = queryset.filter(
+            Q(booth__category=Booth.Category.ECO) | Q(booth__name__in=ECO_CHIP_EXTRA_BOOTH_NAMES)
+        )
     else:
         queryset = queryset.filter(time_slot=time_slot)
 
