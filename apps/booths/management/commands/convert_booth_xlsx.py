@@ -30,6 +30,18 @@ RENAMED_BOOTHS = {
     ("다회용기 부스", "팔정도"): "다회용기 부스 (팔정도)",
 }
 
+# 엑셀 category 제안과 다르게 운영에서 확정한 협업(COLLAB)/일반(ETC) 분류.
+# (name, zone)은 RENAMED_BOOTHS 적용 후 이름 기준이다.
+CATEGORY_OVERRIDES = {
+    ("의료인공지능학과", "팔정도"): "COLLAB",
+    ("축기단", "팔정도"): "COLLAB",
+    ("동국 108리더스", "팔정도"): "COLLAB",
+    ("다회용기 부스 (혜화관)", "혜화관"): "COLLAB",
+    ("다회용기 부스 (팔정도)", "팔정도"): "COLLAB",
+    ("애드러쉬", "팔정도"): "ETC",
+    ("오뚜기 진라면 서포터즈 진앤지니", "팔정도"): "ETC",
+}
+
 # 구조물 열 예: "MARKET 21×12m" → placements에 structure/width/depth로 나간다.
 STRUCTURE_PATTERN = re.compile(r"^(?P<kind>[A-Z]+)\s+(?P<width>[\d.]+)\s*[×x]\s*(?P<depth>[\d.]+)")
 
@@ -174,6 +186,7 @@ class Command(BaseCommand):
             name = _text(row["name"])
             zone = _text(row["zone"])
             name = RENAMED_BOOTHS.get((name, zone), name)
+            category = CATEGORY_OVERRIDES.get((name, zone), category)
 
             # v10부터 있는 열. 이전 버전 엑셀에는 없어서 비어 있는 것으로 본다.
             restroom_type = _text(row.get("restroom_type"))

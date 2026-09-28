@@ -166,8 +166,39 @@ def test_seed_booths_distinguishes_reusable_container_booths():
     )
 
     assert hyehwa.pk != paljeongdo.pk
-    assert hyehwa.category == Booth.Category.ECO
-    assert paljeongdo.category == Booth.Category.ECO
+    assert hyehwa.category == Booth.Category.COLLAB
+    assert paljeongdo.category == Booth.Category.COLLAB
+
+
+@pytest.mark.django_db
+def test_seed_booths_collab_categories():
+    _seed()
+
+    collab = set(
+        Booth.objects.filter(category=Booth.Category.COLLAB).values_list("name", flat=True)
+    )
+    assert collab == {
+        "경영학과",
+        "의료인공지능학과",
+        "동국 108리더스",
+        "축기단",
+        "다회용기 부스 (혜화관)",
+        "다회용기 부스 (팔정도)",
+    }
+    assert Booth.objects.get(name="애드러쉬").category == Booth.Category.ETC
+    assert Booth.objects.get(name="오뚜기 진라면 서포터즈 진앤지니").category == Booth.Category.ETC
+
+
+@pytest.mark.django_db
+def test_eco_chip_still_shows_reusable_container_booths(client):
+    """다회용기 부스는 COLLAB이지만 '동빛에코' 칩에도 나와야 한다."""
+    _seed()
+
+    response = client.get(
+        "/api/booths/", {"date": "2026-09-30", "time_slot": "NIGHT", "category": "ECO"}
+    )
+    names = {b["name"] for b in response.json()["data"]["booths"]}
+    assert names == {"다회용기 부스 (혜화관)", "다회용기 부스 (팔정도)"}
 
 
 @pytest.mark.django_db
