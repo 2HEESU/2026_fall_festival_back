@@ -64,6 +64,17 @@ def _date(value):
     return str(value)
 
 
+def _bool(value, formula, label):
+    """엑셀 TRUE/FALSE 셀을 bool로. 값 계산 없이 저장된 파일은 캐시 값이 비어 있어서
+    수식 원문(=TRUE())으로 판단한다. 둘 다 없으면 추측하지 않고 멈춘다."""
+    if isinstance(value, bool):
+        return value
+    text = str(formula or "").strip().upper().lstrip("=").removesuffix("()")
+    if text in ("TRUE", "FALSE"):
+        return text == "TRUE"
+    raise CommandError(f"{label}: TRUE/FALSE를 읽을 수 없습니다 (값 {value!r}, 원문 {formula!r})")
+
+
 def _structure(value):
     value = _text(value)
     if not value:
@@ -93,6 +104,10 @@ class Command(BaseCommand):
 
         xlsx_path = Path(options["xlsx_path"])
         workbook = openpyxl.load_workbook(xlsx_path, data_only=True)
+        # 수식 원문. 계산 값이 저장되지 않은 셀을 읽을 때만 쓴다.
+        formula_booths = {
+            row["임시키"]: row for row in _sheet_rows(openpyxl.load_workbook(xlsx_path), "부스")
+        }
 
         placements = defaultdict(list)
         for row in _sheet_rows(workbook, "배치좌표"):
@@ -160,6 +175,11 @@ class Command(BaseCommand):
             zone = _text(row["zone"])
             name = RENAMED_BOOTHS.get((name, zone), name)
 
+            # v10부터 있는 열. 이전 버전 엑셀에는 없어서 비어 있는 것으로 본다.
+            restroom_type = _text(row.get("restroom_type"))
+            if restroom_type not in (None, "MALE", "FEMALE", "BOTH"):
+                raise CommandError(f"{key} restroom_type 값이 올바르지 않습니다: {restroom_type!r}")
+
             booths.append(
                 {
                     "key": key,
@@ -167,6 +187,7 @@ class Command(BaseCommand):
                     "subtitle": _text(row["subtitle"]),
                     "place_type": row["place_type"],
                     "category": category,
+                    "restroom_type": restroom_type,
                     "booth_size": row["booth_size"],
                     "zone": zone,
                     "location_detail": _text(row["location_detail"]),
@@ -178,7 +199,11 @@ class Command(BaseCommand):
                     "event_description": _text(row["event_description"]),
                     "instagram_id": _text(row["instagram_id"]),
                     "entrance_fee": row["entrance_fee"],
-                    "has_reusable_container": bool(row["has_reusable_"]),
+                    "has_reusable_container": _bool(
+                        row["has_reusable_"],
+                        formula_booths[key]["has_reusable_"],
+                        f"{key} has_reusable_container",
+                    ),
                     "operations": operations.pop(key, []),
                     "menus": menus.pop(key, []),
                 }

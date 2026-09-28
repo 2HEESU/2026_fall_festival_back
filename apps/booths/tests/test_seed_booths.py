@@ -6,7 +6,9 @@ from io import StringIO
 
 import pytest
 from django.core.management import call_command
+from django.core.management.base import CommandError
 
+from apps.booths.management.commands.convert_booth_xlsx import _bool
 from apps.booths.management.commands.seed_booths import DEFAULT_INPUT
 from apps.booths.models import Booth, BoothMenu, BoothOperation
 
@@ -166,3 +168,32 @@ def test_seed_booths_distinguishes_reusable_container_booths():
     assert hyehwa.pk != paljeongdo.pk
     assert hyehwa.category == Booth.Category.ECO
     assert paljeongdo.category == Booth.Category.ECO
+
+
+@pytest.mark.django_db
+def test_seed_booths_restroom_type_and_reusable_container():
+    _seed()
+
+    toilets = Booth.objects.filter(category=Booth.Category.TOILET)
+    assert set(toilets.values_list("restroom_type", flat=True)) == {Booth.RestroomType.BOTH}
+    assert (
+        not Booth.objects.exclude(category=Booth.Category.TOILET)
+        .exclude(restroom_type__isnull=True)
+        .exists()
+    )
+    # 엑셀 v10: 다회용기 미사용 21곳만 False
+    assert Booth.objects.filter(has_reusable_container=False).count() == 21
+    assert Booth.objects.get(name="문과대학").has_reusable_container is True
+
+
+@pytest.mark.parametrize(
+    ("value", "formula", "expected"),
+    [(True, None, True), (None, "=TRUE()", True), (None, "=FALSE()", False), (None, "TRUE", True)],
+)
+def test_convert_reads_formula_booleans(value, formula, expected):
+    assert _bool(value, formula, "N01") is expected
+
+
+def test_convert_rejects_blank_booleans():
+    with pytest.raises(CommandError):
+        _bool(None, None, "N01")
