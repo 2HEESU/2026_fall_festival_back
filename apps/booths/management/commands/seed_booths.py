@@ -8,7 +8,7 @@
 날짜/메뉴는 삭제). 여러 번 실행해도 결과가 같다 (멱등).
 
 파일에 없는 기존 부스(화장실 등)는 건드리지 않는다.
-썸네일·이미지·가는 길·화장실 구분·등불 수는 엑셀에 없는 값이라 갱신하지 않는다.
+썸네일·이미지·가는 길·등불 수는 엑셀에 없는 값이라 갱신하지 않는다.
 
     python manage.py seed_booths --dry-run   # 무엇이 바뀌는지만 확인
     python manage.py seed_booths
@@ -29,6 +29,7 @@ BOOTH_FIELDS = [
     "subtitle",
     "place_type",
     "category",
+    "restroom_type",
     "booth_size",
     "location_detail",
     "map_x",
