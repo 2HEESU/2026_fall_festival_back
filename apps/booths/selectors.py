@@ -88,6 +88,8 @@ def booth_operations_on(festival_date, time_slot, category=None, user=None):
                     booth__category=Booth.Category.ETC,
                 )
             )
+            # 다회용기 부스는 COLLAB이지만 '동빛에코' 칩에만 보여준다.
+            .exclude(booth__name__in=ECO_CHIP_EXTRA_BOOTH_NAMES)
             .annotate(
                 collab_order=Case(
                     When(booth__category=Booth.Category.COLLAB, then=Value(0)),

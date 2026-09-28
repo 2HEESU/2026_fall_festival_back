@@ -228,3 +228,24 @@ def test_convert_reads_formula_booleans(value, formula, expected):
 def test_convert_rejects_blank_booleans():
     with pytest.raises(CommandError):
         _bool(None, None, "N01")
+
+
+@pytest.mark.django_db
+def test_booth_chip_excludes_reusable_container_booths(client):
+    """다회용기 부스는 '부스' 칩에서는 빠지고 '동빛에코' 칩에만 나온다."""
+    _seed()
+
+    response = client.get(
+        "/api/booths/", {"date": "2026-09-30", "time_slot": "NIGHT", "category": "BOOTH"}
+    )
+    booths = response.json()["data"]["booths"]
+    names = {b["name"] for b in booths}
+    assert "다회용기 부스 (혜화관)" not in names
+    assert "다회용기 부스 (팔정도)" not in names
+
+    # 다른 협업 부스는 그대로 '부스' 칩에 남는다.
+    response = client.get(
+        "/api/booths/", {"date": "2026-09-29", "time_slot": "DAY", "category": "BOOTH"}
+    )
+    day_names = {b["name"] for b in response.json()["data"]["booths"]}
+    assert {"축기단", "동국 108리더스"} <= day_names
